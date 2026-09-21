@@ -20,7 +20,7 @@ python3 -m unittest -v test_analyzer test_misalignment test_catalog test_communi
 cd web && npm install && npm run dev
 ```
 
-开发服务器默认 `http://localhost:4173/`。`npm run dev` 会先把 Python 引擎和 `data/` 快照拷进 `web/public/`。
+开发服务器默认 `http://localhost:4173/`。`npm run dev` 会先把 Python 引擎和 `data/` 快照拷进 `web/public/`。网页可搜索落雪曲库并现场拉取 Simai 抄谱；谱面只在本机解析、不回传。水/诈称仍只用国服水鱼高置信拟合，不用落雪定数。
 
 生产构建预览（可选）：
 

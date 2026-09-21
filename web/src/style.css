@@ -25,6 +25,60 @@ a { color: var(--accent); }
 header h1 { font-size: 1.7rem; margin: 0 0 6px; letter-spacing: .02em; }
 header p { margin: 0 0 22px; color: var(--muted); }
 
+.lxns {
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  border-radius: 16px;
+  padding: 22px 22px 16px;
+  margin-bottom: 16px;
+}
+.lxns strong { display: block; font-size: 1.05rem; margin-bottom: 6px; }
+.field-label {
+  display: block;
+  margin: 12px 0 6px;
+  color: var(--muted);
+  font-size: .82rem;
+}
+.lxns input[type="search"] {
+  width: 100%;
+  background: #0e131b;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+}
+.lxns input[type="search"]:disabled { opacity: .6; }
+.lxns-results { margin-top: 12px; display: grid; gap: 10px; }
+.lxns-song {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: left;
+}
+.lxns-song h3 { margin: 0 0 2px; font-size: 1rem; }
+.lxns-diffs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.lxns-type {
+  font-size: .75rem;
+  color: var(--muted);
+  min-width: 3.2em;
+}
+.lxns-diffs button {
+  background: #2b364a;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: .82rem;
+}
+.lxns-diffs button:hover { border: 0; background: #36445c; }
+
 .drop {
   border: 1.5px dashed #4a5a78;
   background: var(--bg-2);

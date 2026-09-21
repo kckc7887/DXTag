@@ -1,4 +1,13 @@
 import "./style.css";
+import {
+  DIFF_LABELS,
+  chartAssetId,
+  difficultiesOf,
+  fetchChart,
+  loadCatalog,
+  searchSongs,
+  slotFromLxnsDifficulty,
+} from "./lxns.js";
 
 const app = document.querySelector("#app");
 const BASE = import.meta.env.BASE_URL || "/";
@@ -7,8 +16,16 @@ app.innerHTML = `
   <div class="wrap">
     <header>
       <h1>DXTag</h1>
-      <p>把 maidata.txt 拖进来，在浏览器里分析谱面结构、雷达和高置信拟合对照。谱面不会上传到服务器。社区抄谱与官谱不完全一致；DXRating 无审核标签不会参与判定。</p>
+      <p>从落雪曲库选曲，或把 maidata.txt 拖进来，在浏览器里分析谱面结构、雷达和高置信拟合对照。谱面从落雪拉到本机解析，不会回传。社区抄谱与官谱不完全一致；DXRating 无审核标签不会参与判定。</p>
     </header>
+    <section class="lxns" id="lxns">
+      <strong>从落雪曲库选曲</strong>
+      <span class="fine">点难度会拉取该标准/DX 整份抄谱再分析。抄谱仍可能对不上官谱物量；水/诈称仍只用水鱼高置信拟合。</span>
+      <label class="field-label" for="lxns-q">搜索曲目</label>
+      <input id="lxns-q" type="search" placeholder="曲名、别名、艺术家或曲目 ID…" autocomplete="off" disabled />
+      <div class="fine" id="lxns-meta">正在载入落雪曲目列表…</div>
+      <div id="lxns-results" class="lxns-results" hidden></div>
+    </section>
     <section class="drop" id="drop">
       <strong>拖放 maidata.txt，或选择 / 粘贴文本</strong>
       <span class="fine">支持 Simai / Majdata 多难度 <code>&amp;inote_N</code>。默认分析全部非空难度。</span>
@@ -21,7 +38,7 @@ app.innerHTML = `
     <div class="status" id="status">正在准备分析引擎…</div>
     <div id="result" class="hidden"></div>
     <footer>
-      预估定数以国服水鱼高置信拟合为校准目标；样本不够时回退启发式，并标明置信度。日服内部定数与 Gamerch / maiノーツ解说只作对照。
+      预估定数以国服水鱼高置信拟合为校准目标；样本不够时回退启发式，并标明置信度。日服内部定数与 Gamerch / maiノーツ解说只作对照。落雪只提供抄谱原文，不参与水/诈称判定。
     </footer>
   </div>
 `;
@@ -32,46 +49,75 @@ const dropEl = document.querySelector("#drop");
 const fileEl = document.querySelector("#file");
 const pasteEl = document.querySelector("#paste");
 const pasteRun = document.querySelector("#paste-run");
+const lxnsQuery = document.querySelector("#lxns-q");
+const lxnsMeta = document.querySelector("#lxns-meta");
+const lxnsResults = document.querySelector("#lxns-results");
 
 const worker = new Worker(`${BASE}analyzer-worker.js`);
 let ready = false;
+let busy = false;
 let current = null;
 let svgs = {};
+let pendingSlot = null;
 
 worker.onmessage = (event) => {
   const msg = event.data || {};
   if (msg.type === "status") statusEl.textContent = msg.text;
   if (msg.type === "ready") {
     ready = true;
-    statusEl.textContent = "引擎已就绪，可以上传谱面。";
+    statusEl.textContent = "引擎已就绪，可以选曲或上传谱面。";
   }
   if (msg.type === "error") {
     statusEl.textContent = `分析失败：${msg.message}`;
-    pasteRun.disabled = false;
+    setIdle();
   }
   if (msg.type === "result") {
     current = msg.document;
     svgs = msg.svgs || {};
-    render(current.preferred_difficulty);
+    const selected = pendingSlot;
+    pendingSlot = null;
+    render(selected ?? current.preferred_difficulty);
     statusEl.textContent = `完成：${current.title || "未命名"} · ${current.reports.length} 个难度`;
-    pasteRun.disabled = false;
+    setIdle();
   }
 };
 worker.onerror = (err) => {
   statusEl.textContent = `引擎错误：${err.message || err}`;
+  setIdle();
 };
 worker.postMessage({ type: "init", base: BASE });
 
+function setIdle() {
+  busy = false;
+  pasteRun.disabled = false;
+  lxnsResults.querySelectorAll("button").forEach((button) => {
+    button.disabled = false;
+  });
+}
+
 function setBusy(text) {
+  busy = true;
   pasteRun.disabled = true;
+  lxnsResults.querySelectorAll("button").forEach((button) => {
+    button.disabled = true;
+  });
   statusEl.textContent = text;
 }
 
-function analyzeText(text, filename) {
+function analyzeText(text, filename, preferredSlot = null) {
   if (!text.trim()) {
+    pendingSlot = null;
     statusEl.textContent = "没有读到文本。";
+    setIdle();
     return;
   }
+  if (!ready) {
+    pendingSlot = null;
+    statusEl.textContent = "引擎还没就绪。";
+    setIdle();
+    return;
+  }
+  pendingSlot = preferredSlot;
   setBusy("正在分析…");
   worker.postMessage({ type: "analyze", text, filename });
 }
@@ -100,6 +146,102 @@ dropEl.addEventListener("drop", async (event) => {
   if (!file) return;
   analyzeText(await file.text(), file.name);
 });
+
+function typeLabel(type) {
+  if (type === "dx") return "DX";
+  if (type === "utage") return "宴会场";
+  return "标准";
+}
+
+function diffButtonLabel(type, row) {
+  if (type === "utage") {
+    const kanji = (row.kanji || "宴").trim();
+    return `${kanji} ${row.level || ""}`.trim();
+  }
+  const name = DIFF_LABELS[row.difficulty] || `难度${row.difficulty}`;
+  return `${name} ${row.level || ""}`.trim();
+}
+
+function renderSearch() {
+  const hits = searchSongs(lxnsQuery.value);
+  if (!hits.length) {
+    lxnsResults.hidden = true;
+    lxnsResults.innerHTML = "";
+    lxnsMeta.textContent = lxnsQuery.value.trim()
+      ? "没有匹配到曲目。"
+      : "输入曲名、别名、艺术家或 ID。";
+    return;
+  }
+  lxnsMeta.textContent = `显示 ${hits.length} 首`;
+  lxnsResults.hidden = false;
+  lxnsResults.innerHTML = hits
+    .map(({ song, aliases }) => {
+      const diffs = difficultiesOf(song);
+      const groups = [
+        ["standard", diffs.standard],
+        ["dx", diffs.dx],
+        ["utage", diffs.utage],
+      ].filter(([, rows]) => rows.length);
+      const aliasHint = aliases.slice(0, 3).join(" / ");
+      return `
+        <article class="lxns-song">
+          <div>
+            <h3>${escapeHtml(song.title || "未命名")}</h3>
+            <p class="fine">${escapeHtml(song.artist || "未知艺术家")} · #${song.id}${aliasHint ? ` · ${escapeHtml(aliasHint)}` : ""}</p>
+          </div>
+          ${groups
+            .map(
+              ([type, rows]) => `
+            <div class="lxns-diffs">
+              <span class="lxns-type">${typeLabel(type)}</span>
+              ${rows
+                .map(
+                  (row) =>
+                    `<button type="button" data-song="${song.id}" data-type="${type}" data-diff="${row.difficulty}"${busy ? " disabled" : ""}>${escapeHtml(diffButtonLabel(type, row))}</button>`,
+                )
+                .join("")}
+            </div>`,
+            )
+            .join("")}
+        </article>
+      `;
+    })
+    .join("");
+}
+
+lxnsQuery.addEventListener("input", renderSearch);
+
+lxnsResults.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-song]");
+  if (!button || busy) return;
+  if (!ready) {
+    statusEl.textContent = "引擎还没就绪，请稍后再点难度。";
+    return;
+  }
+  const songId = Number(button.dataset.song);
+  const type = button.dataset.type;
+  const diff = Number(button.dataset.diff);
+  const chartId = chartAssetId(songId, type);
+  const slot = slotFromLxnsDifficulty(diff);
+  try {
+    setBusy(`正在从落雪拉取 #${chartId}…`);
+    const text = await fetchChart(chartId);
+    analyzeText(text, `lxns-${chartId}.txt`, slot);
+  } catch (err) {
+    pendingSlot = null;
+    statusEl.textContent = err && err.message ? err.message : String(err);
+    setIdle();
+  }
+});
+
+loadCatalog()
+  .then((data) => {
+    lxnsQuery.disabled = false;
+    lxnsMeta.textContent = `已载入 ${data.songs.length} 首落雪曲目。输入曲名、别名、艺术家或 ID。`;
+  })
+  .catch((err) => {
+    lxnsMeta.textContent = `落雪曲目列表加载失败：${err.message || err}`;
+  });
 
 function fmt(value, digits = 1) {
   if (value == null || Number.isNaN(value)) return "—";
@@ -186,5 +328,3 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
-
-void ready;
