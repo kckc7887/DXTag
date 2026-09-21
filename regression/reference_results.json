@@ -1,0 +1,694 @@
+{
+  "method": "independent raw-string parser with fractions.Fraction; exact timestamps; no demo imports",
+  "judged_objects": 759,
+  "slide_count": 76,
+  "foreign_wait": 53,
+  "same_origin_launch": 46,
+  "umiyuri_structure": 46,
+  "records": [
+    {
+      "head": 28.0,
+      "start": 28.5,
+      "end": 28.75,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 29.0,
+      "start": 29.5,
+      "end": 29.75,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 30.0,
+      "start": 30.5,
+      "end": 30.75,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 32.0,
+      "start": 32.5,
+      "end": 32.75,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 33.0,
+      "start": 33.5,
+      "end": 33.75,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 34.0,
+      "start": 34.5,
+      "end": 34.75,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 36.75,
+      "start": 37.25,
+      "end": 37.75,
+      "origin": 1,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 37.75,
+      "start": 38.25,
+      "end": 38.75,
+      "origin": 8,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 38.75,
+      "start": 39.25,
+      "end": 39.75,
+      "origin": 1,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 39.75,
+      "start": 40.25,
+      "end": 41.0,
+      "origin": 8,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 42.0,
+      "start": 42.5,
+      "end": 42.75,
+      "origin": 8,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 42.5,
+      "start": 43.0,
+      "end": 43.25,
+      "origin": 1,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 44.0,
+      "start": 44.5,
+      "end": 44.75,
+      "origin": 2,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 44.5,
+      "start": 45.0,
+      "end": 45.25,
+      "origin": 6,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 46.0,
+      "start": 46.5,
+      "end": 46.75,
+      "origin": 7,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 46.5,
+      "start": 47.0,
+      "end": 47.25,
+      "origin": 3,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 50.0,
+      "start": 50.5,
+      "end": 51.0,
+      "origin": 3,
+      "foreign_wait": true,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 52.0,
+      "start": 52.5,
+      "end": 52.75,
+      "origin": 6,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 52.5,
+      "start": 53.0,
+      "end": 53.25,
+      "origin": 2,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 54.0,
+      "start": 54.5,
+      "end": 54.75,
+      "origin": 3,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 54.5,
+      "start": 55.0,
+      "end": 55.25,
+      "origin": 7,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 57.5,
+      "start": 58.0,
+      "end": 58.5,
+      "origin": 6,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 59.0,
+      "start": 59.5,
+      "end": 59.75,
+      "origin": 2,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 59.5,
+      "start": 60.0,
+      "end": 60.25,
+      "origin": 8,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 60.0,
+      "start": 60.5,
+      "end": 60.75,
+      "origin": 1,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 60.5,
+      "start": 61.0,
+      "end": 61.25,
+      "origin": 8,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 62.25,
+      "start": 62.75,
+      "end": 63.0,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 62.75,
+      "start": 63.25,
+      "end": 63.5,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 63.25,
+      "start": 63.75,
+      "end": 64.0,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 63.75,
+      "start": 64.25,
+      "end": 64.5,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 64.25,
+      "start": 64.75,
+      "end": 65.0,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 64.75,
+      "start": 65.25,
+      "end": 65.5,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 66.25,
+      "start": 66.75,
+      "end": 67.0,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 66.75,
+      "start": 67.25,
+      "end": 67.5,
+      "origin": 2,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 69.75,
+      "start": 70.25,
+      "end": 70.5,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 70.25,
+      "start": 70.75,
+      "end": 71.0,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 70.75,
+      "start": 71.25,
+      "end": 71.5,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 71.25,
+      "start": 71.75,
+      "end": 72.0,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 71.75,
+      "start": 72.25,
+      "end": 72.5,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 72.25,
+      "start": 72.75,
+      "end": 73.0,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 72.75,
+      "start": 73.25,
+      "end": 73.5,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 74.25,
+      "start": 74.75,
+      "end": 75.0,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 74.75,
+      "start": 75.25,
+      "end": 75.5,
+      "origin": 7,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 102.0,
+      "start": 102.5,
+      "end": 102.75,
+      "origin": 6,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 102.5,
+      "start": 103.0,
+      "end": 103.25,
+      "origin": 3,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 103.0,
+      "start": 103.5,
+      "end": 103.75,
+      "origin": 5,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 103.5,
+      "start": 104.0,
+      "end": 104.75,
+      "origin": 4,
+      "foreign_wait": false,
+      "same_origin_launch": false,
+      "umiyuri_structure": false
+    },
+    {
+      "head": 106.25,
+      "start": 106.75,
+      "end": 107.0,
+      "origin": 7,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 106.75,
+      "start": 107.25,
+      "end": 107.5,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 107.25,
+      "start": 107.75,
+      "end": 108.0,
+      "origin": 7,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 107.75,
+      "start": 108.25,
+      "end": 108.5,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 108.25,
+      "start": 108.75,
+      "end": 109.0,
+      "origin": 7,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 108.75,
+      "start": 109.25,
+      "end": 109.5,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 109.75,
+      "start": 110.25,
+      "end": 110.5,
+      "origin": 2,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 110.25,
+      "start": 110.75,
+      "end": 111.0,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 110.75,
+      "start": 111.25,
+      "end": 111.5,
+      "origin": 2,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 111.25,
+      "start": 111.75,
+      "end": 112.0,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 111.75,
+      "start": 112.25,
+      "end": 112.5,
+      "origin": 2,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 112.25,
+      "start": 112.75,
+      "end": 113.0,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 114.25,
+      "start": 114.75,
+      "end": 115.0,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 114.75,
+      "start": 115.25,
+      "end": 115.5,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 115.25,
+      "start": 115.75,
+      "end": 116.0,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 115.75,
+      "start": 116.25,
+      "end": 116.5,
+      "origin": 4,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 116.25,
+      "start": 116.75,
+      "end": 117.0,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 122.25,
+      "start": 122.75,
+      "end": 123.0,
+      "origin": 7,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 122.75,
+      "start": 123.25,
+      "end": 123.5,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 123.25,
+      "start": 123.75,
+      "end": 124.0,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 123.75,
+      "start": 124.25,
+      "end": 124.5,
+      "origin": 2,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 124.25,
+      "start": 124.75,
+      "end": 125.0,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 124.75,
+      "start": 125.25,
+      "end": 125.5,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 125.25,
+      "start": 125.75,
+      "end": 126.0,
+      "origin": 7,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 125.75,
+      "start": 126.25,
+      "end": 126.5,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 126.25,
+      "start": 126.75,
+      "end": 127.0,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 126.75,
+      "start": 127.25,
+      "end": 127.5,
+      "origin": 2,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 127.25,
+      "start": 127.75,
+      "end": 128.0,
+      "origin": 8,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    },
+    {
+      "head": 127.75,
+      "start": 128.25,
+      "end": 128.5,
+      "origin": 1,
+      "foreign_wait": true,
+      "same_origin_launch": true,
+      "umiyuri_structure": true
+    }
+  ]
+}
