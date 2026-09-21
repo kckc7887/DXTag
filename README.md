@@ -1,8 +1,6 @@
 # DXTag
 
-在浏览器里上传 `maidata.txt`，分析舞萌谱面的结构难点、雷达和高置信难度对照。
-
-站点会由 GitHub Actions 发布到 GitHub Pages。谱面只在你的浏览器里解析，不会上传到服务器。
+在浏览器或命令行里分析舞萌 `maidata.txt`：结构难点、雷达和高置信难度对照。谱面只在本机解析。
 
 ## 它会给出什么
 
@@ -15,20 +13,22 @@
 
 社区玩家抄谱和官方谱面不一定完全一致。对不上物量的谱面仍然做结构分析，但**不会**用拟合定数去贴标签。
 
-## 网页
-
-仓库开启 **Settings → Pages → Source = GitHub Actions** 后，合并到 `main` 即会发布：
-
-https://kckc7887.github.io/DXTag/
-
-本地预览：
+## 网页（本地）
 
 ```bash
 python3 -m unittest -v test_analyzer test_misalignment test_catalog test_community
 cd web && npm install && npm run dev
 ```
 
-开发服务器默认 `http://localhost:4173/DXTag/`。
+开发服务器默认 `http://localhost:4173/`。`npm run dev` 会先把 Python 引擎和 `data/` 快照拷进 `web/public/`。
+
+生产构建预览（可选）：
+
+```bash
+cd web && npm run build && npm run preview
+```
+
+`vite preview` 只服务已构建的 `web/dist`，没有 `dist` 时先 `npm run build`。
 
 ## 命令行
 
@@ -47,7 +47,7 @@ python3 calibrate.py calibration.csv --out data/model.json
 
 ## 离线曲库快照
 
-公开统计可以重新拉取，**不会把 maisquared 谱面原文提交进 GitHub**：
+公开统计可以重新拉取，**不要把 maisquared 谱面原文提交进仓库**：
 
 ```bash
 python3 tools/fetch_public.py
