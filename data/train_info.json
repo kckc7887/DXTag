@@ -1,0 +1,16 @@
+{
+  "n_labeled": 4142,
+  "n_groups": 1179,
+  "trained": true,
+  "metrics": {
+    "method": "5-fold grouped cross-validation",
+    "seed": 42,
+    "n": 4142,
+    "groups": 1179,
+    "mae": 0.6549610040878714,
+    "rmse": 0.8570965630562308,
+    "heuristic_mae": 1.8091334592306714,
+    "note": "按 group 拆分；缩放和拟合都只在对应训练折执行。没有超参数搜索。MAE 不是单谱置信区间。"
+  },
+  "prefer_over_heuristic": true
+}
