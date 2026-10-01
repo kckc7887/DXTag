@@ -1,0 +1,23 @@
+{
+  "name": "dxtag-five-axis",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Offline maidata to five-axis chart complexity scores",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "bin": { "dxtag-score": "dist/cli.mjs" },
+  "exports": "./dist/index.mjs",
+  "scripts": {
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "score": "node dist/cli.mjs",
+    "check": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.6",
+    "esbuild": "0.25.12",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

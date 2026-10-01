@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { complexityRadar, roundHalfEven } from '../src/algorithm/five-axis-complexity';
+const old = { 键盘: 34, 星星: 22, 技巧: 40, 体力: 19, 爆发: 30 };
+const no = { star_technique: 0, keyboard_rhythm: 0, star_burst: 0 };
+test('exported old radar agrees with Python tie-to-even rounding', () => {
+  assert.equal(roundHalfEven(40.5), 40); assert.equal(roundHalfEven(41.5), 42);
+  assert.equal(roundHalfEven(40.49999999), 40); assert.equal(roundHalfEven(40.50000001), 41);
+});
+test('zero support preserves the existing five-axis baseline and unknown Slide falls back', () => {
+  assert.deepEqual(complexityRadar(old, null, no), old);
+});
+test('star and keyboard rhythm independently lift technique without relabeling keyboard as Slide', () => {
+  const keyboard = complexityRadar({ ...old, 星星: 0 }, 0, { ...no, keyboard_rhythm: 60 });
+  const star = complexityRadar(old, 65, { ...no, star_technique: 60 });
+  const mixed = complexityRadar(old, 65, { ...no, star_technique: 60, keyboard_rhythm: 60 });
+  assert.equal(keyboard.星星, 0);
+  assert.ok(keyboard.技巧 > old.技巧 && star.技巧 > old.技巧 && mixed.技巧 > star.技巧);
+  for (const result of [keyboard, star, mixed]) {
+    assert.equal(result.键盘, old.键盘); assert.equal(result.体力, old.体力);
+    assert.equal(result.爆发, old.爆发);
+  }
+});
+test('complexity rise only adds burst support, bounded and monotonic at every baseline', () => {
+  for (const baseline of [0, 20, 90, 100]) {
+    let previous = baseline;
+    for (const support of [0, 1, 20, 60, 100]) {
+      const result = complexityRadar({ ...old, 爆发: baseline }, 50, { ...no, star_burst: support });
+      assert.ok(result.爆发 >= previous && result.爆发 <= 100);
+      assert.equal(result.技巧, old.技巧); previous = result.爆发;
+    }
+  }
+});
+test('invalid observations cannot silently become zeros', () => {
+  assert.throws(() => complexityRadar(old, NaN, no));
+  assert.throws(() => complexityRadar(old, 50, { ...no, keyboard_rhythm: -1 }));
+});
+test('Touch inputs and continuous lock load raise keyboard and technique without inventing Slide or stamina', () => {
+  const result = complexityRadar({ ...old, 星星: 0 }, 0, { ...no, touch_input: 70, hold_lock: 70 });
+  assert.ok(result.键盘 > old.键盘 && result.技巧 > old.技巧);
+  assert.equal(result.星星, 0); assert.equal(result.体力, old.体力); assert.equal(result.爆发, old.爆发);
+});
