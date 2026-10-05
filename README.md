@@ -78,14 +78,6 @@ const charts = scoreMaidata(text, undefined, error => {
 
 ```powershell
 npm run build
-npm test
-```
-
-真实谱回归通过 `DXTAG_CHARTS_DIR` 指定谱面库根目录，保留 `版本目录/曲名/maidata.txt` 的目录结构；未提供对应谱面时跳过。
-
-```powershell
-$env:DXTAG_CHARTS_DIR = '.\charts'
-npm test
 ```
 
 算法与公式见 [技术文档](docs/ALGORITHM.md)。

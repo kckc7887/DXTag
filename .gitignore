@@ -1,12 +1,7 @@
 node_modules/
 dist/
-coverage/
 *.tsbuildinfo
 
-/.local/
-/charts/
-/BACKUP.txt
-/scores.json
 .env
 .env.*
 !.env.example

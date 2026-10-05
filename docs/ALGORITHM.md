@@ -359,26 +359,12 @@ P90 为按块负担升序排列后，累计实际时长达到 90% 的块负担�
 
 总体算法版本为 `dxtag-five-axis-v1.2`，谱内版本为 `chart-relative-burden-v1`；`SCALE_VERSION` 和原全曲库结果保持不变。
 
-## 10. 构建与测试
+## 10. 构建
 
 ```powershell
 npm run build
-npm test
 ```
 
 构建先执行 TypeScript 类型检查，再由 esbuild 生成 `dist/cli.mjs` 和 `dist/index.mjs`。
-
-测试覆盖输出字段、难度选择、编码、退出码、节奏与位移、等待附点、前后接续、并发 Slide、慢速跟随、原星头回占、跨 BPM、Touch HOLD 与短 HOLD 边界。真实谱测试核对《enchanted love》的节奏证据和《TECHNOPOLIS 2085》的锁手区间。
-
-底层测试另覆盖逐段连滑、指定 BPM／秒数、源文本位置、修饰符、560 种常规端点组合、V 折返及自定义点／圆连接。`real_chart_regression.test.ts` 固定 12 张真实谱的五维结果。
-
-谱内回归覆盖均匀输入、位置移动、节奏变化、滑动主导、无头与重复轨迹、Touch／两种 HOLD、同位置占用并集、短促爆发、谱中恢复、首尾空白、跨 BPM、低分舍入和元数据／难度隔离。《系ぎて》全部难度额外冻结原全曲库分数，并检查封顶 Re:MASTER 的谱内五维比例独立变化。
-
-真实谱测试从 `DXTAG_CHARTS_DIR` 指定的谱面库中读取 `版本目录/曲名/maidata.txt`，环境变量未设置或对应文件缺失时标记跳过：
-
-```powershell
-$env:DXTAG_CHARTS_DIR = '.\charts'
-npm test
-```
 
 项目许可见 [MIT License](../LICENSE)。

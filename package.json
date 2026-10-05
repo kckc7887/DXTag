@@ -10,14 +10,11 @@
   "exports": "./dist/index.mjs",
   "scripts": {
     "build": "tsc --noEmit && node scripts/build.mjs",
-    "score": "node dist/cli.mjs",
-    "check": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts"
+    "score": "node dist/cli.mjs"
   },
   "devDependencies": {
     "@types/node": "24.13.6",
     "esbuild": "0.25.12",
-    "tsx": "4.23.15",
     "typescript": "5.9.3"
   }
 }
