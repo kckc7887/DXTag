@@ -4,7 +4,7 @@
 
 每张谱面的结果包含 `title`、`difficulty`、`scores`、`chartRelativeScores`。`title` 取自 maidata 的 `&title`，`difficulty` 由选中的普通谱槽位确定。
 
-`scores` 使用全曲库固定标尺，可跨谱面比较；`chartRelativeScores` 将同一谱面的最高维度换算为 10.0，用于比较该谱面内部的五维强弱。两组数值均为 0.0–10.0：
+`scores` 使用全曲库固定标尺，可跨谱面比较；`chartRelativeScores` 独立计算同一谱面的原始动作负担，将最强维度换算为 10.0，用于比较该谱面内部的五维强弱。两组数值均为 0.0–10.0。下表描述全曲库计算，谱内计算见第 9 节：
 
 | 轴 | 计算内容 |
 | --- | --- |
@@ -27,8 +27,8 @@ maidata → SimaiParser → 音符、BPM／分度事件、时值、源码位置
                         ├─ starComplexity：星星复杂度
                         ├─ keyboardRhythmComplexity：节奏与位移
                         └─ inputComplexity：Touch 与锁手
-                             → 固定标尺 → 五轴融合 ┬→ scores（全曲库）
-                                                   └→ chartRelativeScores（谱面自身）
+                             ├→ 固定标尺 → 五轴融合 → scores（全曲库）
+                             └→ 原始动作成本 → 四拍负担 → 整谱汇总 → chartRelativeScores（谱面自身）
 ```
 
 | 文件 | 职责 |
@@ -47,6 +47,7 @@ maidata → SimaiParser → 音符、BPM／分度事件、时值、源码位置
 | `src/algorithm/rhythm-complexity.ts` | 起音间隔与位移 |
 | `src/algorithm/input-complexity.ts` | Touch 输入和锁手 |
 | `src/algorithm/five-axis-complexity.ts` | 五轴融合 |
+| `src/algorithm/chart-relative-burden.ts` | 独立谱内负担、汇总与解释明细 |
 | `src/scale.json` | 固定归一化锚点 |
 
 ## 3. 时间轴与 Slide 事件
@@ -309,13 +310,56 @@ normalized = clamp(raw/anchor × 100, 0, 100)
 
 ```text
 scores[axis] = Math.round(internalScore[axis]) / 10
-maxAxis = max(internalScore[键盘], internalScore[星星], internalScore[技巧], internalScore[体力], internalScore[爆发])
-chartRelativeScores[axis] = maxAxis > 0 ? Math.round(internalScore[axis] / maxAxis × 100) / 10 : 0
 ```
 
-`chartRelativeScores` 在 `scores` 的显示舍入前计算，因此低分维度不会因提前舍入丢失；五维全为零时返回五个零。每张谱面独立计算，相对值不可跨谱面比较。
+此全曲库路径的固定锚点、融合、封顶和舍入保持不变。
 
-## 9. 构建与测试
+## 9. 独立谱内负担（chart-relative-burden-v1）
+
+`chartRelativeBurden` 只接收谱面与原始滑动、节奏、占手观测，不接收全曲库锚点或融合分数。负担单位为算法定义的动作成本／实际秒，五维最终比例不可跨谱面比较。
+
+### 9.1 时间和动作
+
+排除 Mine；实际输入包括 TAP、BREAK、Touch、两种 HOLD 头及普通 Slide 头，无头 Slide 只产生滑动工作。同刻同位置的输入去重，中心 Touch 的 C/C1/C2 共用位置。完整同几何同时间的滑动轨迹沿用星星算法去重。
+
+统计范围从首个实际输入或滑动动作开始，结束于最后释放／滑动终点或最后输入头加原生 IOI，取较晚者。原生 IOI 为本谱正实际输入间隔的中位数（偶数个取排序后的上中位数）；单输入／无输入头时使用起点的一拍时长。无头 Slide 的前置等待不计入谱前空白。所有转换通过 `TimingTimeline`，结构用拍，成本速率和交叠用实际毫秒。
+
+从范围起点按四拍切块，末块裁切；谱中休息块保留，谱前／谱后空白排除。短谱按实际时长计算，不扩展到一秒或完整四拍。
+
+### 9.2 每块五维
+
+| 维度／观测 | 未封顶的块负担 |
+| --- | --- |
+| 键盘 K | 实际触点数／块秒数 |
+| 星星 X | 原始运动 + 0.7×节奏 + 1.2×协调 + 1.5×上下文成本，分摊后／块秒数 |
+| 技巧 T | 输入位置移动、输入节奏、滑动技巧和全部 HOLD 占手成本，分摊后／块秒数 |
+| HOLD 占用 H | 各位置实际占用秒数／块秒数 × 本谱原生输入频率 |
+| 体力 | min(L,C) |
+| 爆发 | max(0,L−C) |
+
+滑动 `actions` 明细保留轨迹去重后的完整组件成本，取组件总和，不使用已有的 `sum/√N` 标量。运动成本分配到实际移动区间，其余成本分配到星头至终点；无头 Slide 全部分配到实际移动区间。滑动技巧沿用运动 0.15、节奏 0.7、协调 1.2、上下文 1.5 权重。
+
+输入位置移动成本为 `chordMovement/4 × 前后实际触点数均值`，记在当前输入所在块。节奏窗口 `raw` 已是速率，其总成本为 `raw×窗口真实秒数`；按有效输入区间交叠分摊，每个区间最长为本谱原生 IOI，以保留完整休息块的恢复。HOLD 占手采用现有锁手公式，`allHoldWindows` 包含普通和 Touch HOLD；原 `windows` 与全曲库支持项保持原值。HOLD 占用时间按同一位置区间并集合并。
+
+`L=max(K,X,T,H)`。以每块拍坐标中心前后共 32 拍为范围，计算 L 的实际时间加权均值 C；首尾裁切到实际谱面范围，分母使用覆盖秒数。均匀连续输入满足 L=C，谱内爆发为零。浮点身份容差只处理数值误差，不构成节奏／接触时间窗口。
+
+### 9.3 整谱汇总、显示与依据
+
+各维均使用同一时间权重，休息段也进入分母：
+
+```text
+rawScore[axis] = 0.75 × 时间加权均值 + 0.25 × 时间加权 P90
+maximum = max(rawScore 的五维)
+chartRelativeScores[axis] = maximum > 0 ? Math.round(rawScore[axis] / maximum × 100) / 10 : 0
+```
+
+P90 为按块负担升序排列后，累计实际时长达到 90% 的块负担。原始负担不封顶，也不提前舍入；五维全零返回零，微小正值仍能保留比例。
+
+结果同时包含各维原值、均值、P90、来源的成本总和／时间均值，以及最重的五个四拍块和源音符 ID。来源表的时间均值描述成本组成，不作为 P90 的可加份额。API 和网页使用同一共享函数；网页切换后分数、雷达、公式、依据和 JSON 使用所选口径。
+
+总体算法版本为 `dxtag-five-axis-v1.2`，谱内版本为 `chart-relative-burden-v1`；`SCALE_VERSION` 和原全曲库结果保持不变。
+
+## 10. 构建与测试
 
 ```powershell
 npm run build
@@ -327,6 +371,8 @@ npm test
 测试覆盖输出字段、难度选择、编码、退出码、节奏与位移、等待附点、前后接续、并发 Slide、慢速跟随、原星头回占、跨 BPM、Touch HOLD 与短 HOLD 边界。真实谱测试核对《enchanted love》的节奏证据和《TECHNOPOLIS 2085》的锁手区间。
 
 底层测试另覆盖逐段连滑、指定 BPM／秒数、源文本位置、修饰符、560 种常规端点组合、V 折返及自定义点／圆连接。`real_chart_regression.test.ts` 固定 12 张真实谱的五维结果。
+
+谱内回归覆盖均匀输入、位置移动、节奏变化、滑动主导、无头与重复轨迹、Touch／两种 HOLD、同位置占用并集、短促爆发、谱中恢复、首尾空白、跨 BPM、低分舍入和元数据／难度隔离。《系ぎて》全部难度额外冻结原全曲库分数，并检查封顶 Re:MASTER 的谱内五维比例独立变化。
 
 真实谱测试从 `DXTAG_CHARTS_DIR` 指定的谱面库中读取 `版本目录/曲名/maidata.txt`，环境变量未设置或对应文件缺失时标记跳过：
 

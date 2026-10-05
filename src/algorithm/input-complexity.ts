@@ -18,14 +18,14 @@ export type HoldLockWindow={id:string;holdId:number;holdKind:'hold-start'|'touch
   startMs:number;endMs:number;startBeat:number;endBeat:number;raw:number;noteIds:number[];touchCount:number;holdCount:number;
   onsetRate:number;movementMean:number;dualHeldTouchCount:number;components:{sustained:number;movement:number;coordination:number};inputs:LockInput[]};
 export type InputComplexityResult={version:typeof INPUT_COMPLEXITY_VERSION;research_only:true;raw:number;touchRaw:number;touchCount:number;touchTapCount:number;touchHoldCount:number;
-  windows:HoldLockWindow[];policy:typeof INPUT_COMPLEXITY_POLICY};
+  windows:HoldLockWindow[];allHoldWindows:HoldLockWindow[];policy:typeof INPUT_COMPLEXITY_POLICY};
 const EPS=1e-7,mean=(xs:number[])=>xs.reduce((a,b)=>a+b,0)/Math.max(1,xs.length);
 export function inputComplexity(chart:Chart):InputComplexityResult{
   const timeline=TimingTimeline.fromChart(chart),onsets=inputOnsets(chart,true,true),notes=new Map(chart.notes.map(n=>[n.id,n])),
     audio=(n:Note)=>n.timingMs-timeline.msFromBeat(4)+chart.firstMs,
     beat=(ms:number)=>timeline.scoreBeatFromAudioMs(ms,chart.firstMs),
     holds=[...new Map(chart.notes.filter(n=>!n.isMine&&(n.type==='hold-start'||n.type==='touch-hold-start')&&n.endTimeMs>n.timingMs).map(n=>[n.id,n])).values()]
-      .map(note=>({note,start:audio(note),end:audio(note)+note.endTimeMs-note.timingMs})),windows:HoldLockWindow[]=[];
+      .map(note=>({note,start:audio(note),end:audio(note)+note.endTimeMs-note.timingMs})),windows:HoldLockWindow[]=[],allHoldWindows:HoldLockWindow[]=[];
   for(const h of holds){
     const groups:KeyboardRhythmOnset[]=onsets.filter(o=>o.ms>=h.start-EPS&&o.ms<h.end-EPS).flatMap(o=>{
       const indexes=o.noteIds.map((id,i)=>id===h.note.id?-1:i).filter(i=>i>=0);
@@ -43,17 +43,18 @@ export function inputComplexity(chart:Chart):InputComplexityResult{
       inputs.push({noteId,kind:n.type,position:n.position,ms:group.ms,beat:group.beat,
         heldIds:active.map(other=>other.note.id).sort((a,b)=>a-b),pressure,source:{...n.source}});
     }
-    // This sidecar adds Touch-coupled load to the existing button analysis.
-    // Both kinds of HOLD use the same formula; every foreign attack is kept.
-    if(h.note.type!=='touch-hold-start'&&!inputs.some(i=>i.kind==='touch'||i.kind==='touch-hold-start'))continue;
     const sustained=Math.log1p(duration)*Math.log1p(noteIds.length)*Math.log1p(onsetRate)*occupancy,
       movement=sustained*movementMean/4,coordination=sustained*mean(inputs.map(i=>i.pressure));
-    windows.push({id:`hold:${h.note.id}`,holdId:h.note.id,holdKind:h.note.type as HoldLockWindow['holdKind'],holdPosition:h.note.position,source:{...h.note.source},
+    const window:HoldLockWindow={id:`hold:${h.note.id}`,holdId:h.note.id,holdKind:h.note.type as HoldLockWindow['holdKind'],holdPosition:h.note.position,source:{...h.note.source},
       startMs:h.start,endMs:h.end,startBeat:beat(h.start),endBeat:beat(h.end),raw:sustained+movement+coordination,noteIds,
       touchCount:inputs.filter(i=>i.kind==='touch'||i.kind==='touch-hold-start').length,
       holdCount:inputs.filter(i=>i.kind==='hold-start'||i.kind==='touch-hold-start').length,
       onsetRate,movementMean,dualHeldTouchCount:inputs.filter(i=>i.kind==='touch'&&i.pressure>0).length,
-      components:{sustained,movement,coordination},inputs});
+      components:{sustained,movement,coordination},inputs};
+    allHoldWindows.push(window);
+    // Preserve the all-library Touch-coupled support exactly; chart-local
+    // analysis can inspect every HOLD through the additional sidecar.
+    if(h.note.type==='touch-hold-start'||inputs.some(i=>i.kind==='touch'||i.kind==='touch-hold-start'))windows.push(window);
   }
   const touches=onsets.flatMap(o=>{const indexes=o.kinds.map((kind,i)=>kind==='touch'||kind==='touch-hold-start'?i:-1).filter(i=>i>=0);
     return indexes.length?[{...o,noteIds:indexes.map(i=>o.noteIds[i]!),positions:indexes.map(i=>o.positions[i]!)}]:[];});
@@ -63,5 +64,5 @@ export function inputComplexity(chart:Chart):InputComplexityResult{
     raw=windows.reduce((s,w)=>s+w.raw,0)/Math.sqrt(Math.max(1,windows.length));
   if(![raw,touchRaw,...windows.map(w=>w.raw)].every(Number.isFinite))throw Error('Non-finite input complexity');
   return {version:INPUT_COMPLEXITY_VERSION,research_only:true,raw,touchRaw,touchCount,touchTapCount:[...notes.values()].filter(n=>!n.isMine&&n.type==='touch').length,
-    touchHoldCount:[...notes.values()].filter(n=>!n.isMine&&n.type==='touch-hold-start').length,windows,policy:INPUT_COMPLEXITY_POLICY};
+    touchHoldCount:[...notes.values()].filter(n=>!n.isMine&&n.type==='touch-hold-start').length,windows,allHoldWindows,policy:INPUT_COMPLEXITY_POLICY};
 }

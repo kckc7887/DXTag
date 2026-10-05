@@ -15,15 +15,6 @@ export type RadarScores = Record<typeof RADAR_AXES[number], number>;
 export type RadarSupports = { star_technique: number; keyboard_rhythm: number; star_burst: number; touch_input?: number; hold_lock?: number };
 const bounded = (v: number) => Math.max(0, Math.min(100, v));
 const rounded = (v: number) => Math.round(bounded(v) * 10) / 10;
-/** Compare the five finished axes within one chart before public-score rounding. */
-export function chartRelativeRadar(scores: RadarScores): RadarScores {
-  const values = RADAR_AXES.map(axis => scores[axis]);
-  if (values.some(value => !Number.isFinite(value) || value < 0 || value > 100))
-    throw Error('Invalid radar score');
-  const maximum = Math.max(...values);
-  return Object.fromEntries(RADAR_AXES.map(axis =>
-    [axis, maximum > 0 ? Math.round(scores[axis] / maximum * 100) / 10 : 0])) as RadarScores;
-}
 /** Match the existing Python radar's round() at exact ties. */
 export function roundHalfEven(value: number): number {
   const lower = Math.floor(value), fraction = value - lower;

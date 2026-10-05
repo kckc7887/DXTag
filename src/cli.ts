@@ -14,6 +14,7 @@ const HELP=`DXTag 五维评分 0.0–10.0
 
 输出数组，每项包含 title、difficulty、scores（全曲库）和 chartRelativeScores（谱面自身）。
 同谱五维比较用 chartRelativeScores；跨谱比较用 scores。
+谱内分数独立分析原始动作：75% 整谱平均负担 + 25% 高负担分位，最强维度为 10.0。
 退出码：0 成功；1 存在解析/计算失败；2 参数、文件读取或普通谱选择错误。
 `;
 function main(args:string[]) {

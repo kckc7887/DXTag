@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { chartRelativeRadar, complexityRadar, roundHalfEven } from '../src/algorithm/five-axis-complexity';
+import { complexityRadar, roundHalfEven } from '../src/algorithm/five-axis-complexity';
+import { chartRelativeRadar } from '../src/algorithm/chart-relative-burden';
 const old = { 键盘: 34, 星星: 22, 技巧: 40, 体力: 19, 爆发: 30 };
 const no = { star_technique: 0, keyboard_rhythm: 0, star_burst: 0 };
 test('exported old radar agrees with Python tie-to-even rounding', () => {
   assert.equal(roundHalfEven(40.5), 40); assert.equal(roundHalfEven(41.5), 42);
   assert.equal(roundHalfEven(40.49999999), 40); assert.equal(roundHalfEven(40.50000001), 41);
 });
-test('chart-relative radar scales the peak, ties and zeros within one chart', () => {
+test('independent workload display maps the peak, ties and zeros within one chart', () => {
   assert.deepEqual(chartRelativeRadar({ 键盘: 30, 星星: 20, 技巧: 30, 体力: 0, 爆发: 15 }),
     { 键盘: 10, 星星: 6.7, 技巧: 10, 体力: 0, 爆发: 5 });
   assert.deepEqual(chartRelativeRadar({ 键盘: 0, 星星: 0, 技巧: 0, 体力: 0, 爆发: 0 }),
@@ -18,7 +19,12 @@ test('chart-relative radar uses values before public-score rounding', () => {
   assert.equal(Math.round(internal.键盘) / 10, 0);
   assert.deepEqual(chartRelativeRadar(internal),
     { 键盘: 5, 星星: 10, 技巧: 0, 体力: 0, 爆发: 0 });
-  assert.throws(() => chartRelativeRadar({ ...internal, 星星: NaN }), /Invalid radar score/);
+  assert.throws(() => chartRelativeRadar({ ...internal, 星星: NaN }), /Invalid chart-relative workload/);
+  assert.throws(() => chartRelativeRadar({ ...internal, 星星: -1 }));
+  assert.deepEqual(chartRelativeRadar({ 键盘: 400, 星星: 800, 技巧: 0, 体力: 0, 爆发: 0 }),
+    { 键盘: 5, 星星: 10, 技巧: 0, 体力: 0, 爆发: 0 });
+  assert.deepEqual(chartRelativeRadar({ 键盘: 1e-200, 星星: 2e-200, 技巧: 0, 体力: 0, 爆发: 0 }),
+    { 键盘: 5, 星星: 10, 技巧: 0, 体力: 0, 爆发: 0 });
 });
 test('zero support preserves the existing five-axis baseline and unknown Slide falls back', () => {
   assert.deepEqual(complexityRadar(old, null, no), old);

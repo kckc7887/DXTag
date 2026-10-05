@@ -32,8 +32,10 @@ export type StarWindow={id:string;startMs:number;endMs:number;startBeat:number;e
   components:StarComponents;slideIds:number[];branchCount:number;contextNoteIds:number[];waiting:StarWaiting;
   occupancy:StarOccupancy&{events:StarHeadReturn[]}};
 export type StarProfile={startMs:number;endMs:number;startBeat:number;endBeat:number;raw:number;techniqueRaw:number;riseRaw:number;slideIds:number[];contextNoteIds:number[]};
+/** Full costs of one geometrically deduplicated timed trajectory, before sqrt(N). */
+export type StarActionWorkload={branchKeys:string[];slideIds:number[];hasHead:boolean;headMs:number;startMs:number;endMs:number;components:StarComponents};
 export type StarComplexityResult={schemaVersion:typeof STAR_COMPLEXITY_VERSION;raw:number|null;techniqueRaw:number|null;burstRaw:number|null;windows:StarWindow[];profile:StarProfile[];
-  components:StarComponents|null;occupancy:StarOccupancy|null;coverage:{expectedBranches:number;observedBranches:number;complete:boolean};policy:typeof STAR_COMPLEXITY_POLICY};
+  actions:StarActionWorkload[];components:StarComponents|null;occupancy:StarOccupancy|null;coverage:{expectedBranches:number;observedBranches:number;complete:boolean};policy:typeof STAR_COMPLEXITY_POLICY};
 type Point={x:number;y:number};
 type Piece={start:number;end:number;geometry:Geometry};
 type Contact={note:Note;ms:number;end:number;beat:number;endBeat:number;point:Point};
@@ -101,8 +103,8 @@ export function starComplexity(chart:Chart,events:readonly SlideEvent[]):StarCom
   }
   if(cache.size!==expectedBranches||observedBranches!==expectedBranches)complete=false;
   const coverage={expectedBranches,observedBranches,complete};
-  if(!complete)return {schemaVersion:STAR_COMPLEXITY_VERSION,raw:null,techniqueRaw:null,burstRaw:null,windows:[],profile:[],components:null,occupancy:null,coverage,policy};
-  if(!actions.length)return {schemaVersion:STAR_COMPLEXITY_VERSION,raw:0,techniqueRaw:0,burstRaw:0,windows:[],profile:[],components:zero(),occupancy:emptyOccupancy(),coverage,policy};
+  if(!complete)return {schemaVersion:STAR_COMPLEXITY_VERSION,raw:null,techniqueRaw:null,burstRaw:null,windows:[],profile:[],actions:[],components:null,occupancy:null,coverage,policy};
+  if(!actions.length)return {schemaVersion:STAR_COMPLEXITY_VERSION,raw:0,techniqueRaw:0,burstRaw:0,windows:[],profile:[],actions:[],components:zero(),occupancy:emptyOccupancy(),coverage,policy};
   actions.sort((a,b)=>a.start-b.start||a.end-b.end);
   const launches=[...new Set(actions.map(a=>a.startBeat))].sort((a,b)=>a-b),
     launchGaps=launches.slice(1).map((v,i)=>v-launches[i]!);
@@ -256,5 +258,6 @@ export function starComplexity(chart:Chart,events:readonly SlideEvent[]):StarCom
   }
   const components=combine(actions.map(a=>({a,weight:1}))),raw=total(components),techniqueRaw=technique(components),burstRaw=Math.max(0,...profile.map(p=>p.riseRaw));
   const {events:_events,...summary}=occupancy(actions);
-  return {schemaVersion:STAR_COMPLEXITY_VERSION,raw,techniqueRaw,burstRaw,windows,profile,components,occupancy:summary,coverage,policy};
+  return {schemaVersion:STAR_COMPLEXITY_VERSION,raw,techniqueRaw,burstRaw,windows,profile,components,occupancy:summary,coverage,policy,
+    actions:actions.map(a=>({branchKeys:[...a.keys],slideIds:[...a.ids],hasHead:a.hasHead,headMs:a.head,startMs:a.start,endMs:a.end,components:{...a.parts}}))};
 }
