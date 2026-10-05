@@ -3,13 +3,11 @@ import {baseBurden} from './algorithm/base-burden';
 import {starComplexity} from './algorithm/star-complexity';
 import {keyboardRhythmComplexity} from './algorithm/rhythm-complexity';
 import {inputComplexity} from './algorithm/input-complexity';
-import {complexityRadar, legacyRadar, type RadarScores} from './algorithm/five-axis-complexity';
-import {chartRelativeBurden} from './algorithm/chart-relative-burden';
+import {chartRelativeRadar, complexityRadar, legacyRadar, type RadarScores} from './algorithm/five-axis-complexity';
 import scale from './scale.json';
 
-export const ALGORITHM_VERSION = 'dxtag-five-axis-v1.3';
-export {chartRelativeBurden, CHART_RELATIVE_VERSION, CHART_RELATIVE_POLICY} from './algorithm/chart-relative-burden';
-export type {ChartRelativeResult, ChartRelativeAxis, ChartRelativeBlock, ChartRelativeObservations} from './algorithm/chart-relative-burden';
+export const ALGORITHM_VERSION = 'dxtag-five-axis-v1.4';
+export {chartRelativeRadar, CHART_RELATIVE_VERSION, CHART_RELATIVE_POLICY} from './algorithm/five-axis-complexity';
 export const SCALE_VERSION = scale.sourceProjection;
 export const AXES = ['键盘', '星星', '技巧', '体力', '爆发'] as const;
 export const DIFFICULTIES = {2:'BASIC',3:'ADVANCED',4:'EXPERT',5:'MASTER',6:'Re:MASTER'} as const;
@@ -38,7 +36,7 @@ export function scoreChart(text: string, difficulty: Difficulty): ChartScores {
     keyboard_rhythm:support(rhythm.raw,scale.rhythm),touch_input:support(input.touchRaw,scale.touch),hold_lock:support(input.raw,scale.holdLock)});
   return {title:chart.title,difficulty:DIFFICULTIES[difficulty],
     scores:Object.fromEntries(AXES.map(axis=>[axis,Math.round(result[axis])/10])) as FiveAxisScores,
-    chartRelativeScores:chartRelativeBurden(chart,{star,rhythm,input}).scores};
+    chartRelativeScores:chartRelativeRadar(result)};
 }
 
 /** Score the selected slots. An error handler can collect failures and continue. */

@@ -13,8 +13,23 @@ export const COMPLEXITY_RADAR_POLICY = Object.freeze({
 export const RADAR_AXES = ['键盘', '星星', '技巧', '体力', '爆发'] as const;
 export type RadarScores = Record<typeof RADAR_AXES[number], number>;
 export type RadarSupports = { star_technique: number; keyboard_rhythm: number; star_burst: number; touch_input?: number; hold_lock?: number };
+export const CHART_RELATIVE_VERSION = 'chart-relative-library-v1';
+export const CHART_RELATIVE_POLICY = Object.freeze({
+  version: CHART_RELATIVE_VERSION,
+  source: 'finished all-library 0–100 axes before public-score rounding; fixed anchors, fusion, caps and intermediate rounding are preserved',
+  projection: 'round(axis / maximum * 100) / 10; all-zero axes remain zero',
+});
 const bounded = (v: number) => Math.max(0, Math.min(100, v));
 const rounded = (v: number) => Math.round(bounded(v) * 10) / 10;
+/** Compare finished all-library axes before their public 0–10 rounding. */
+export function chartRelativeRadar(fused: RadarScores): RadarScores {
+  const values = RADAR_AXES.map(axis => fused[axis]);
+  if (values.some(value => !Number.isFinite(value) || value < 0 || value > 100))
+    throw Error('Invalid chart-relative source score');
+  const maximum = Math.max(...values);
+  return Object.fromEntries(RADAR_AXES.map(axis =>
+    [axis, maximum > 0 ? Math.round(fused[axis] / maximum * 100) / 10 : 0])) as RadarScores;
+}
 /** Match the existing Python radar's round() at exact ties. */
 export function roundHalfEven(value: number): number {
   const lower = Math.floor(value), fraction = value - lower;

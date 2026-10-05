@@ -39,13 +39,18 @@ npm run --silent score -- "maidata.txt" -d master
 - `title`：maidata 的 `&title`；缺省时为空字符串。
 - `difficulty`：`BASIC`、`ADVANCED`、`EXPERT`、`MASTER` 或 `Re:MASTER`。
 - `scores`：以全曲库固定标尺计算的五项数值，可跨谱面比较。
-- `chartRelativeScores`：从该谱面的原始输入、滑动、节奏和 HOLD 独立计算五维负担，再将最强维度映射为 10.0；仅用于比较同一谱面的五维强弱。
+- `chartRelativeScores`：使用曲库融合后的五维值，按本谱最大值等比放大，最强维度为 10.0；仅用于比较同一谱面的五维强弱。
 
-谱内计算按四拍统计未封顶的动作成本。键盘、星星、技巧和体力以 **75% 时间加权均值 + 25% 时间加权 P90** 汇总整谱负担；体力衡量周围 32 拍持续水平支持的负担。
+两组分数共用曲库的固定锚点、权重、融合、封顶和中间舍入。设曲库融合后的内部五维值为 `F`（0–100），`M` 为五维最大值：
 
-爆发以 **75% 短时动作强度 + 25% 超出持续水平的增量** 计算块负担，再取负担最高的四拍时间加权均值。短时高负担不会被整谱时长或休息段稀释，连续高密度输入也保留爆发强度。短于四拍的谱面使用全部实际时长。
+```text
+scores[axis] = Math.round(F[axis]) / 10
+chartRelativeScores[axis] = M > 0 ? Math.round(F[axis] / M * 100) / 10 : 0
+```
 
-谱内计算不使用全曲库锚点或 `scores`，全曲库封顶不会抹去谱内差异。所有比例在显示舍入前计算。算法版本为 `dxtag-five-axis-v1.3`，谱内版本为 `chart-relative-burden-v2`；原全曲库标尺和计算结果保持不变。
+单曲换算使用最后公共分数显示舍入前的 `F`，不从已显示的 `scores` 反推。它保留曲库内部五维的比例和强弱顺序；显示舍入可能产生并列，多个封顶维度继续并列。内部五维全零时返回五个零；微小的内部正值即使在曲库公共分数中显示为 0.0，仍参与单曲比例计算。
+
+算法版本为 `dxtag-five-axis-v1.4`，单曲版本为 `chart-relative-library-v1`；原全曲库标尺和计算结果保持不变。
 
 计算失败的谱面从结果中略过，原因写入标准错误。全部失败时输出 `[]`。
 
@@ -66,7 +71,7 @@ const chart = scoreChart(text, 5);  // {title, difficulty, scores, chartRelative
 const charts = scoreMaidata(text); // 同一结构的数组
 ```
 
-共享的 `chartRelativeBurden(chart, {star, rhythm, input})` 接收解析后的谱面与原始观测，返回分数、原始负担、各维整谱均值/P90、爆发峰段均值与选取拍数、来源和片段依据。`CHART_RELATIVE_VERSION` 标识其计算口径；`scoreChart` 的返回对象仍只有上述四个字段。
+共享的 `chartRelativeRadar(fused)` 接收五个有限的 0–100 曲库融合值，返回单曲五维分数；输入不合法时抛出异常。它与 `CHART_RELATIVE_VERSION`、`CHART_RELATIVE_POLICY` 一起由公共入口导出，供 API 与网页复用。旧的 `chartRelativeBurden` 及 `ChartRelativeResult`、`ChartRelativeAxis`、`ChartRelativeBlock`、`ChartRelativeObservations` 已移除，调用方应改用共享换算函数与曲库计算依据。`scoreChart` 的返回对象仍只有上述四个字段。
 
 两个接口在计算失败时抛出异常。`scoreMaidata` 可传入错误回调以继续计算其他谱面：
 
