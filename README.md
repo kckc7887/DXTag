@@ -41,9 +41,11 @@ npm run --silent score -- "maidata.txt" -d master
 - `scores`：以全曲库固定标尺计算的五项数值，可跨谱面比较。
 - `chartRelativeScores`：从该谱面的原始输入、滑动、节奏和 HOLD 独立计算五维负担，再将最强维度映射为 10.0；仅用于比较同一谱面的五维强弱。
 
-谱内计算按四拍统计未封顶的动作成本，以 **75% 时间加权均值 + 25% 时间加权 P90** 汇总整谱负担。体力衡量周围 32 拍持续水平支持的负担，爆发衡量超出该水平的短时增量。均匀连续输入的谱内爆发为零。
+谱内计算按四拍统计未封顶的动作成本。键盘、星星、技巧和体力以 **75% 时间加权均值 + 25% 时间加权 P90** 汇总整谱负担；体力衡量周围 32 拍持续水平支持的负担。
 
-谱内计算不使用全曲库锚点或 `scores`，全曲库封顶不会抹去谱内差异。所有比例在显示舍入前计算。算法版本为 `dxtag-five-axis-v1.2`，谱内版本为 `chart-relative-burden-v1`；原全曲库标尺和计算结果保持不变。
+爆发以 **75% 短时动作强度 + 25% 超出持续水平的增量** 计算块负担，再取负担最高的四拍时间加权均值。短时高负担不会被整谱时长或休息段稀释，连续高密度输入也保留爆发强度。短于四拍的谱面使用全部实际时长。
+
+谱内计算不使用全曲库锚点或 `scores`，全曲库封顶不会抹去谱内差异。所有比例在显示舍入前计算。算法版本为 `dxtag-five-axis-v1.3`，谱内版本为 `chart-relative-burden-v2`；原全曲库标尺和计算结果保持不变。
 
 计算失败的谱面从结果中略过，原因写入标准错误。全部失败时输出 `[]`。
 
@@ -64,7 +66,7 @@ const chart = scoreChart(text, 5);  // {title, difficulty, scores, chartRelative
 const charts = scoreMaidata(text); // 同一结构的数组
 ```
 
-共享的 `chartRelativeBurden(chart, {star, rhythm, input})` 接收解析后的谱面与原始观测，返回分数、原始负担、各维均值/P90、来源和片段依据。`CHART_RELATIVE_VERSION` 标识其计算口径；`scoreChart` 的返回对象仍只有上述四个字段。
+共享的 `chartRelativeBurden(chart, {star, rhythm, input})` 接收解析后的谱面与原始观测，返回分数、原始负担、各维整谱均值/P90、爆发峰段均值与选取拍数、来源和片段依据。`CHART_RELATIVE_VERSION` 标识其计算口径；`scoreChart` 的返回对象仍只有上述四个字段。
 
 两个接口在计算失败时抛出异常。`scoreMaidata` 可传入错误回调以继续计算其他谱面：
 

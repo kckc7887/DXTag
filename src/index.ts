@@ -7,7 +7,7 @@ import {complexityRadar, legacyRadar, type RadarScores} from './algorithm/five-a
 import {chartRelativeBurden} from './algorithm/chart-relative-burden';
 import scale from './scale.json';
 
-export const ALGORITHM_VERSION = 'dxtag-five-axis-v1.2';
+export const ALGORITHM_VERSION = 'dxtag-five-axis-v1.3';
 export {chartRelativeBurden, CHART_RELATIVE_VERSION, CHART_RELATIVE_POLICY} from './algorithm/chart-relative-burden';
 export type {ChartRelativeResult, ChartRelativeAxis, ChartRelativeBlock, ChartRelativeObservations} from './algorithm/chart-relative-burden';
 export const SCALE_VERSION = scale.sourceProjection;

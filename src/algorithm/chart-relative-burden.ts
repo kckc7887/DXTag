@@ -7,12 +7,13 @@ import {STAR_COMPLEXITY_POLICY, type StarComplexityResult} from './star-complexi
 import {chordMovement, inputOnsets, keyboardRhythmComplexity, type KeyboardRhythmOnset, type KeyboardRhythmResult} from './rhythm-complexity';
 import {inputComplexity, type InputComplexityResult} from './input-complexity';
 
-export const CHART_RELATIVE_VERSION = 'chart-relative-burden-v1';
+export const CHART_RELATIVE_VERSION = 'chart-relative-burden-v2';
 export const CHART_RELATIVE_POLICY = Object.freeze({
   version: CHART_RELATIVE_VERSION, blockBeats: 4, sustainedBeats: 32,
   meanWeight: .75, peakQuantile: .9,
+  burstLoadWeight: .75, burstPeakBeats: 4,
   units: 'heuristic action workload / physical second',
-  aggregation: '75% duration-weighted mean + 25% duration-weighted P90; peak axis maps to 10 only after independent workload computation',
+  aggregation: 'keyboard/star/technique/stamina: 75% duration-weighted mean + 25% duration-weighted P90; burst: duration-weighted mean of the heaviest four beats; strongest axis maps to 10 after independent workload computation',
 });
 
 const COMPONENT_LABELS = {
@@ -20,7 +21,7 @@ const COMPONENT_LABELS = {
   starCoordination: '滑动并发协调', starContext: '滑动接续上下文',
   movement: '输入位置移动', rhythm: '输入节奏变化', starTechnique: '滑动技巧',
   holdLock: 'HOLD 占手协调', holdOccupancy: 'HOLD 持续占用',
-  sustained: '周围持续水平支持的负担', excess: '超出周围持续水平的负担',
+  sustained: '周围持续水平支持的负担', burstLoad: '短时动作强度（75%）', excess: '超出持续水平的增量（25%）',
 } as const;
 type Component = keyof typeof COMPONENT_LABELS;
 type Axis = typeof RADAR_AXES[number];
@@ -32,7 +33,9 @@ export type ChartRelativeBlock = {
 };
 export type ChartRelativeAxis = {
   axis: Axis; score: number; raw: number; mean: number; p90: number; formula: string;
-  /** Source rates are time means, not additive shares of the P90 statistic. */
+  /** Burst peak statistics; other axes use null and zero respectively. */
+  peakMean: number | null; peakBeats: number;
+  /** Source rates are whole-chart time means, not additive shares of a peak statistic. */
   sources: {label: string; meanRate: number; totalCost: number}[];
   windows: ChartRelativeBlock[];
 };
@@ -197,25 +200,45 @@ export function chartRelativeBurden(chart: Chart, observations: ChartRelativeObs
     const level = Math.max(0, (integral(to) - integral(from)) * 1000 / (to - from));
     block.sustainedLevel = same(level, block.demand) ? block.demand : level;
     block.rates.体力 = block.components.sustained = Math.min(block.demand, block.sustainedLevel);
-    block.rates.爆发 = block.components.excess = Math.max(0, block.demand - block.sustainedLevel);
+    block.components.burstLoad = CHART_RELATIVE_POLICY.burstLoadWeight * block.demand;
+    block.components.excess = (1 - CHART_RELATIVE_POLICY.burstLoadWeight) * Math.max(0, block.demand - block.sustainedLevel);
+    block.rates.爆发 = block.components.burstLoad + block.components.excess;
     for (const key of ['noteIds', 'slideIds', 'holdIds'] as const) block[key] = [...new Set(block[key])].sort((a, b) => a - b);
   }
   const meanRate = (value: (block: ChartRelativeBlock) => number) =>
     profile.reduce((sum, block) => sum + value(block) * (block.endMs - block.startMs) / 1000, 0) / seconds;
+  // Burst describes short-time execution capacity. Select a fixed beat budget
+  // from the heaviest blocks so a brief peak is not diluted by chart length.
+  // The clipped final block contributes only its actual duration.
+  let burstPeakBeats = 0, burstPeakSeconds = 0, burstPeakCost = 0;
+  for (const block of [...profile].sort((a, b) => b.rates.爆发 - a.rates.爆发)) {
+    const remaining = CHART_RELATIVE_POLICY.burstPeakBeats - burstPeakBeats;
+    if (!(remaining > 0) || same(burstPeakBeats, CHART_RELATIVE_POLICY.burstPeakBeats)) break;
+    const blockBeats = block.endBeat - block.startBeat, take = Math.min(blockBeats, remaining);
+    const to = take >= blockBeats || same(take, blockBeats) ? block.endMs
+      : Math.min(block.endMs, timeline.audioMsFromScoreBeat(block.startBeat + take, chart.firstMs));
+    const duration = (to - block.startMs) / 1000;
+    if (!(duration > 0)) continue;
+    burstPeakBeats += take; burstPeakSeconds += duration; burstPeakCost += block.rates.爆发 * duration;
+  }
+  const burstPeakMean = burstPeakSeconds > 0 ? burstPeakCost / burstPeakSeconds : 0;
   const statistics = RADAR_AXES.map(axis => {
     const mean = meanRate(block => block.rates[axis]); let covered = 0, p90 = 0;
     for (const block of [...profile].sort((a, b) => a.rates[axis] - b.rates[axis])) {
       covered += (block.endMs - block.startMs) / 1000;
       if (covered >= seconds * CHART_RELATIVE_POLICY.peakQuantile) { p90 = block.rates[axis]; break; }
     }
-    return {axis, mean, p90, raw: CHART_RELATIVE_POLICY.meanWeight * mean + (1 - CHART_RELATIVE_POLICY.meanWeight) * p90};
+    const isBurst = axis === '爆发';
+    return {axis, mean, p90, peakMean: isBurst ? burstPeakMean : null, peakBeats: isBurst ? burstPeakBeats : 0,
+      raw: isBurst ? burstPeakMean : CHART_RELATIVE_POLICY.meanWeight * mean + (1 - CHART_RELATIVE_POLICY.meanWeight) * p90};
   });
   const rawScores = Object.fromEntries(statistics.map(stat => [stat.axis, stat.raw])) as RadarScores;
   const scores = chartRelativeRadar(rawScores);
   const sources: Record<Axis, Component[]> = {键盘: ['inputs'], 星星: ['starMotion', 'starRhythm', 'starCoordination', 'starContext'],
-    技巧: ['movement', 'rhythm', 'starTechnique', 'holdLock'], 体力: ['sustained'], 爆发: ['excess']};
+    技巧: ['movement', 'rhythm', 'starTechnique', 'holdLock'], 体力: ['sustained'], 爆发: ['burstLoad', 'excess']};
   const formulas: Record<Axis, string> = {键盘: '实际输入数 / 块时长', 星星: '(运动 + 0.7×节奏 + 1.2×并发协调 + 1.5×上下文) / 块时长',
-    技巧: '输入位移 + 节奏变化 + 滑动技巧 + HOLD 占手协调', 体力: 'min(当前负担 L, 周围 32 拍持续水平 C)', 爆发: 'max(0, 当前负担 L − 周围 32 拍持续水平 C)'};
+    技巧: '输入位移 + 节奏变化 + 滑动技巧 + HOLD 占手协调', 体力: 'min(当前负担 L, 周围 32 拍持续水平 C)',
+    爆发: '0.75×当前四拍负担 L + 0.25×max(0, L − 周围 32 拍持续水平 C)'};
   const axes = statistics.map(stat => ({...stat, score: scores[stat.axis], formula: formulas[stat.axis],
     sources: sources[stat.axis].map(key => ({label: COMPONENT_LABELS[key], meanRate: meanRate(block => block.components[key]),
       totalCost: meanRate(block => block.components[key]) * seconds})),
