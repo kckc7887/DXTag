@@ -4,7 +4,7 @@
 
 每张谱面的结果包含 `title`、`difficulty`、`scores`、`chartRelativeScores`。`title` 取自 maidata 的 `&title`，`difficulty` 由选中的普通谱槽位确定。
 
-`scores` 使用全曲库固定标尺，可跨谱面比较；`chartRelativeScores` 将同一份曲库融合结果按本谱最大值等比放大，最强维度为 10.0，用于比较该谱面内部的五维强弱。两组数值均为 0.0–10.0。下表描述共同的五维计算，单曲换算见第 9 节：
+`scores` 使用全曲库固定标尺，可跨谱面比较；`chartRelativeScores` 沿用曲库锚点和权重，将各观察量被封顶截去的超标部分补回，再按本谱最大值换算，最强维度为 10.0。两组数值均为 0.0–10.0。下表描述共同的五维观察量，单曲换算见第 9 节：
 
 | 轴 | 计算内容 |
 | --- | --- |
@@ -27,9 +27,10 @@ maidata → SimaiParser → 音符、BPM／分度事件、时值、源码位置
                         ├─ starComplexity：星星复杂度
                         ├─ keyboardRhythmComplexity：节奏与位移
                         └─ inputComplexity：Touch 与锁手
-                             └→ 固定标尺 → 五轴融合 F（0–100）
-                                                ├→ 公共显示舍入 → scores（全曲库）
-                                                └→ 按本谱最大值换算 → chartRelativeScores（谱面自身）
+                             └→ 固定锚点 → 封顶前归一值
+                                           ├→ 原封顶与五轴融合 F → 公共舍入 → scores
+                                           └→ 加权超标量 E + F → 单曲原值 U
+                                                                  └→ 按最大值换算 → chartRelativeScores
 ```
 
 | 文件 | 职责 |
@@ -314,35 +315,47 @@ scores[axis] = Math.round(internalScore[axis]) / 10
 
 此全曲库路径的固定锚点、融合、封顶和舍入保持不变。
 
-## 9. 基于曲库的单曲标尺（chart-relative-library-v1）
+## 9. 保留曲库超标量的单曲标尺（chart-relative-library-v2）
 
-单曲标尺复用第 8 节的曲库五维融合结果，不再独立统计另一套动作成本。输入 `F` 是 `complexityRadar` 返回的 0–100 五维值，包含现有固定锚点、权重、融合、封顶和所有中间舍入，尚未经过最后公共分数的显示舍入。
+只对已封顶的融合值缩放时，只要最大内部值为 100，单曲映射就退化为曲库分数；更大的原始负担也无法区分。v2 从同一份原始观察量保留封顶前归一值，将超出各固定锚点的部分按原权重补回。曲库分支仍使用第 8 节的原封顶、融合和舍入。
 
-### 9.1 共享换算
+### 9.1 超标量与共享换算
+
+每个观察量先计算 `n = raw / anchor × 100`，不封顶、不舍入。记基础键盘、技巧、体力、爆发的归一值为 `k,t,s,b`，星星主轴、星星技巧、星星突增、输入节奏、Touch、锁手分别为 `x,xt,xb,r,h,l`。令 `o(n)=max(0,n−100)`：
 
 ```text
-M = max(F 的五维)
+E[键盘] = o(k) + 0.65×o(h) + 0.35×o(l)
+E[星星] = o(x)
+E[技巧] = o(t) + 0.65×o(xt) + 0.65×o(r) + 0.65×o(l)
+E[体力] = o(s)
+E[爆发] = o(b) + 0.65×o(xb)
+
+F = 原有曲库融合结果（0–100）
+U[axis] = F[axis] + E[axis]
+M = max(U 的五维)
 scores[axis] = Math.round(F[axis]) / 10
-chartRelativeScores[axis] = M > 0 ? Math.round(F[axis] / M * 100) / 10 : 0
+chartRelativeScores[axis] = M > 0 ? Math.round(U[axis] / M * 100) / 10 : 0
 ```
 
-`chartRelativeRadar(fused: RadarScores): RadarScores` 位于五轴模块，并由公共入口导出。它只接收五个有限的 0–100 融合值；负值、越界和非有限值会抛出异常。API 和网页均将同一份 `fused` 直接传入，不从已显示的 `scores` 反推比例，也不重新解析或计算原始负担。
+所有超标权重来自现有融合策略；基础值和星星主轴使用权重 1。`E` 和 `U` 均保留完整精度，不设上限。这是单曲视图对曲库评分的单调延伸，不是重新拟合的玩家难度模型。超限值不直接进入原乘法融合，以免负因子造成“负担越大分数反而越低”。
 
 ### 9.2 零值、并列和舍入
 
+- 无超标量时 `U=F`，继续使用曲库内部五维的比例；存在超标量时按补回后的 `U` 比较。
 - `M=0` 时返回五个零；`M>0` 时所有最强维度均为 10.0，零值维度仍为零。
 - 无真实 Slide 时沿用曲库的星星零值；其他维度照常换算。
-- 多个维度达到曲库上限时保留并列，不尝试恢复封顶前的差异。
-- 等比映射保留内部五维的比例和排序；一位小数的显示舍入可能产生新的并列，但不会倒置顺序。
-- 最后公共分数舍入可能将微小正值显示为 0.0；单曲换算仍使用内部正值。只有内部五维全零，才返回全零单曲结果。
+- 多个维度达到曲库上限时，其不同超标程度继续进入单曲计算，不再强制并列；相等的单曲原值和一位小数舍入仍可产生并列。
+- 不从已显示的公共分数反推比例。最后公共舍入显示为 0.0 的内部正值，仍参与单曲换算。
 
 ### 9.3 接口与解释
 
-`scoreChart` 和 `scoreMaidata` 的参数、四字段结果结构及错误处理保持不变。`chartRelativeRadar`、`CHART_RELATIVE_VERSION` 和 `CHART_RELATIVE_POLICY` 是共享单曲接口。旧 `chartRelativeBurden` 及其明细类型已移除，调用方使用曲库观测解释得分，再展示本轴融合值、五维最大融合值和相对换算。
+`normalizeLegacyRadar(features, anchors)` 返回封顶前的基础归一值。`projectLibraryRadar(baselineRaw, starRaw, supportRaw)` 接收有限非负的封顶前归一值，统一产生原曲库的 `baseline`、`starScore`、`supports`、`fused`，以及 `excess`、`chartRelativeSource`、`chartRelativeScores`。API 与网页均直接调用这个共享计算入口，避免提前封顶丢失数据。
 
-网页两种标尺共用曲库的公式、锚点、权重、来源表和滑动／节奏／锁手片段；来源表中的贡献仍使用 0–100 内部标尺。切换为单曲时，雷达、数值、详情得分和 JSON 使用单曲结果，详情追加 `F[axis] / M × 10` 的换算依据。
+`chartRelativeRadar(source)` 只负责最后的最大值归一，输入允许大于 100；不得将已封顶的 `fused` 当作修正后的单曲原值。`scoreChart` 和 `scoreMaidata` 的参数、四字段结果结构保持不变。
 
-总体算法版本为 `dxtag-five-axis-v1.4`，单曲版本为 `chart-relative-library-v1`；`SCALE_VERSION` 和原全曲库结果保持不变。
+网页两种标尺共用原始观测、锚点、权重和证据片段。单曲详情同时展示曲库融合值 `F`、加权超标量 `E`、单曲原值 `U` 及 `U[axis]/M×10`；原始量区域展示五维 `U` 和最大值。曲库来源表仍描述原有 0–100 融合路径。
+
+总体算法版本为 `dxtag-five-axis-v1.5`，单曲版本为 `chart-relative-library-v2`；`SCALE_VERSION` 和原全曲库结果保持不变。
 
 ## 10. 构建
 
