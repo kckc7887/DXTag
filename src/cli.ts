@@ -12,7 +12,8 @@ const HELP=`DXTag 五维评分 0.0–10.0
 --json            JSON 输出（默认）；分数固定显示一位小数
 -h, --help        显示帮助
 
-输出数组，每项包含 title、difficulty、scores。
+输出数组，每项包含 title、difficulty、scores（全曲库）和 chartRelativeScores（谱面自身）。
+同谱五维比较用 chartRelativeScores；跨谱比较用 scores。
 退出码：0 成功；1 存在解析/计算失败；2 参数、文件读取或普通谱选择错误。
 `;
 function main(args:string[]) {

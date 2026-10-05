@@ -3,7 +3,7 @@ import {baseBurden} from './algorithm/base-burden';
 import {starComplexity} from './algorithm/star-complexity';
 import {keyboardRhythmComplexity} from './algorithm/rhythm-complexity';
 import {inputComplexity} from './algorithm/input-complexity';
-import {complexityRadar, legacyRadar, type RadarScores} from './algorithm/five-axis-complexity';
+import {chartRelativeRadar, complexityRadar, legacyRadar, type RadarScores} from './algorithm/five-axis-complexity';
 import scale from './scale.json';
 
 export const ALGORITHM_VERSION = 'dxtag-five-axis-v1.1';
@@ -12,7 +12,7 @@ export const AXES = ['键盘', '星星', '技巧', '体力', '爆发'] as const;
 export const DIFFICULTIES = {2:'BASIC',3:'ADVANCED',4:'EXPERT',5:'MASTER',6:'Re:MASTER'} as const;
 export type Difficulty = keyof typeof DIFFICULTIES;
 export type FiveAxisScores = RadarScores;
-export type ChartScores = {title: string; difficulty: string; scores: FiveAxisScores};
+export type ChartScores = {title: string; difficulty: string; scores: FiveAxisScores; chartRelativeScores: FiveAxisScores};
 export type ScoreResult = ChartScores[];
 export type ScoreError = {difficulty: string; message: string};
 const support = (raw: number, anchor: number) => Math.round(Math.max(0,Math.min(100,raw/anchor*100))*10)/10;
@@ -34,7 +34,8 @@ export function scoreChart(text: string, difficulty: Difficulty): ChartScores {
     star_technique:support(star.techniqueRaw,scale.starTechnique),star_burst:support(star.burstRaw,scale.starBurst),
     keyboard_rhythm:support(rhythm.raw,scale.rhythm),touch_input:support(input.touchRaw,scale.touch),hold_lock:support(input.raw,scale.holdLock)});
   return {title:chart.title,difficulty:DIFFICULTIES[difficulty],
-    scores:Object.fromEntries(AXES.map(axis=>[axis,Math.round(result[axis])/10])) as FiveAxisScores};
+    scores:Object.fromEntries(AXES.map(axis=>[axis,Math.round(result[axis])/10])) as FiveAxisScores,
+    chartRelativeScores:chartRelativeRadar(result)};
 }
 
 /** Score the selected slots. An error handler can collect failures and continue. */

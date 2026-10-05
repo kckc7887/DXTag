@@ -2,9 +2,9 @@
 
 ## 1. 数据与接口
 
-每张谱面的结果包含 `title`、`difficulty`、`scores`。`title` 取自 maidata 的 `&title`，`difficulty` 由选中的普通谱槽位确定。
+每张谱面的结果包含 `title`、`difficulty`、`scores`、`chartRelativeScores`。`title` 取自 maidata 的 `&title`，`difficulty` 由选中的普通谱槽位确定。
 
-`scores` 的五项数值均为 0.0–10.0：
+`scores` 使用全曲库固定标尺，可跨谱面比较；`chartRelativeScores` 将同一谱面的最高维度换算为 10.0，用于比较该谱面内部的五维强弱。两组数值均为 0.0–10.0：
 
 | 轴 | 计算内容 |
 | --- | --- |
@@ -27,7 +27,8 @@ maidata → SimaiParser → 音符、BPM／分度事件、时值、源码位置
                         ├─ starComplexity：星星复杂度
                         ├─ keyboardRhythmComplexity：节奏与位移
                         └─ inputComplexity：Touch 与锁手
-                             → 固定标尺 → 五轴融合 → 0.0–10.0
+                             → 固定标尺 → 五轴融合 ┬→ scores（全曲库）
+                                                   └→ chartRelativeScores（谱面自身）
 ```
 
 | 文件 | 职责 |
@@ -304,11 +305,15 @@ normalized = clamp(raw/anchor × 100, 0, 100)
 爆发 = 100 - (100-B0) × (1-0.65Xb/100)
 ```
 
-融合值在 0–100 上保留一位小数，再转为公共分数：
+融合值在 0–100 上保留一位小数，再转为全曲库公共分数：
 
 ```text
-publicScore = Math.round(internalScore) / 10
+scores[axis] = Math.round(internalScore[axis]) / 10
+maxAxis = max(internalScore[键盘], internalScore[星星], internalScore[技巧], internalScore[体力], internalScore[爆发])
+chartRelativeScores[axis] = maxAxis > 0 ? Math.round(internalScore[axis] / maxAxis × 100) / 10 : 0
 ```
+
+`chartRelativeScores` 在 `scores` 的显示舍入前计算，因此低分维度不会因提前舍入丢失；五维全为零时返回五个零。每张谱面独立计算，相对值不可跨谱面比较。
 
 ## 9. 构建与测试
 

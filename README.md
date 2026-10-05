@@ -1,6 +1,6 @@
 # DXTag
 
-读取 `maidata.txt`，输出曲名、难度和五维分数。评分包含键盘、星星、技巧、体力、爆发，范围为 **0.0–10.0**，保留一位小数。
+读取 `maidata.txt`，输出曲名、难度和两组五维分数：相对于全曲库，以及相对于该谱面自身。评分包含键盘、星星、技巧、体力、爆发，范围为 **0.0–10.0**，保留一位小数。
 
 ## 安装与运行
 
@@ -34,11 +34,12 @@ npm run --silent score -- "maidata.txt" -d master
 
 ## 输出
 
-输出始终是 JSON 数组，每张谱面包含三个字段：
+输出始终是 JSON 数组，每张谱面包含四个字段：
 
 - `title`：maidata 的 `&title`；缺省时为空字符串。
 - `difficulty`：`BASIC`、`ADVANCED`、`EXPERT`、`MASTER` 或 `Re:MASTER`。
-- `scores`：五项数值。
+- `scores`：以全曲库固定标尺计算的五项数值，可跨谱面比较。
+- `chartRelativeScores`：该谱面五维内部的相对值；最高维度为 10.0，其余按比例换算，仅用于比较同一谱面的五维强弱。
 
 例如《TECHNOPOLIS 2085》MASTER：
 
@@ -53,6 +54,13 @@ npm run --silent score -- "maidata.txt" -d master
       "技巧": 8.9,
       "体力": 4.2,
       "爆发": 5.6
+    },
+    "chartRelativeScores": {
+      "键盘": 9.5,
+      "星星": 5.7,
+      "技巧": 10.0,
+      "体力": 4.7,
+      "爆发": 6.3
     }
   }
 ]
@@ -73,8 +81,8 @@ import {readFileSync} from 'node:fs';
 import {scoreChart, scoreMaidata} from './dist/index.mjs';
 
 const text = readFileSync('./maidata.txt', 'utf8');
-const chart = scoreChart(text, 5);  // {title, difficulty, scores}
-const charts = scoreMaidata(text); // [{title, difficulty, scores}, ...]
+const chart = scoreChart(text, 5);  // {title, difficulty, scores, chartRelativeScores}
+const charts = scoreMaidata(text); // 同一结构的数组
 ```
 
 两个接口在计算失败时抛出异常。`scoreMaidata` 可传入错误回调以继续计算其他谱面：

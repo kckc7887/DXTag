@@ -32,13 +32,14 @@ test('standalone bundle accepts Unicode paths and emits numeric one-decimal JSON
   assert.ok(Array.isArray(parsed));
   assert.deepEqual(parsed.map((chart: {difficulty:string}) => chart.difficulty), ['EXPERT','MASTER']);
   for(const chart of parsed){
-    assert.deepEqual(Object.keys(chart), ['title','difficulty','scores']);
+    assert.deepEqual(Object.keys(chart), ['title','difficulty','scores','chartRelativeScores']);
     assert.equal(chart.title, '中文曲名');
+    assert.equal(typeof chart.scores.键盘, 'number');
+    assert.equal(typeof chart.chartRelativeScores.键盘, 'number');
   }
   assert.match(result.stdout, /"星星": 0\.0/);
   const decimals = [...result.stdout.matchAll(/"(?:键盘|星星|技巧|体力|爆发)": (\d+\.\d)(?=,|\s)/g)];
-  assert.equal(decimals.length, 10);
-  assert.equal(typeof parsed[0].scores.键盘, 'number');
+  assert.equal(decimals.length, 20);
   assert.equal(run(file).stdout, result.stdout);
 });
 
@@ -48,6 +49,7 @@ test('difficulty aliases and numeric slots agree; single-chart output remains an
   assert.equal(named.status, 0, named.stderr);
   assert.equal(named.stdout, numbered.stdout);
   assert.equal(JSON.parse(named.stdout).length, 1);
+  assert.deepEqual(JSON.parse(named.stdout)[0], JSON.parse(run(file).stdout)[1]);
   assert.equal(run(file, '-d', '5').stdout, named.stdout);
 });
 
@@ -75,7 +77,7 @@ test('partial chart failures use exit code 1 and preserve successes in JSON', ()
   assert.equal(result.status, 1);
   const parsed = JSON.parse(result.stdout);
   assert.equal(parsed.length, 2);
-  assert.ok(parsed.every((chart: object)=>Object.keys(chart).join(',')==='title,difficulty,scores'));
+  assert.ok(parsed.every((chart: object)=>Object.keys(chart).join(',')==='title,difficulty,scores,chartRelativeScores'));
   assert.match(result.stderr, /Re:MASTER/);
 });
 
@@ -108,4 +110,6 @@ test('argument, missing file and undecodable input errors use exit code 2', () =
   }
   assert.match(run(invalid).stderr, /编码/);
   assert.equal(run('--help').status, 0);
+  assert.match(run('--help').stdout, /chartRelativeScores/);
+  assert.match(run('--help').stdout, /跨谱比较用 scores/);
 });
