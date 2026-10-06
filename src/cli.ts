@@ -12,10 +12,7 @@ const HELP=`DXTag 五维评分 0.0–10.0
 --json            JSON 输出（默认）；分数固定显示一位小数
 -h, --help        显示帮助
 
-输出数组，每项包含 title、difficulty、scores（全曲库）和 chartRelativeScores（谱面自身）。
-同谱五维比较用 chartRelativeScores；跨谱比较用 scores。
-谱内分数沿用曲库锚点和权重，补回各原始观察量被封顶截去的超标部分，再按本谱最大值换算。
-曲库分数保持原样；单曲最强维度为 10.0，五维原值全零时均为 0.0。
+输出数组，每项包含 title、difficulty、scores。
 退出码：0 成功；1 存在解析/计算失败；2 参数、文件读取或普通谱选择错误。
 `;
 function main(args:string[]) {

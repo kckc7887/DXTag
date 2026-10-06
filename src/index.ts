@@ -3,20 +3,19 @@ import {baseBurden} from './algorithm/base-burden';
 import {starComplexity} from './algorithm/star-complexity';
 import {keyboardRhythmComplexity} from './algorithm/rhythm-complexity';
 import {inputComplexity} from './algorithm/input-complexity';
-import {normalizeLegacyRadar, projectLibraryRadar, type RadarScores} from './algorithm/five-axis-complexity';
+import {complexityRadar, legacyRadar, type RadarScores} from './algorithm/five-axis-complexity';
 import scale from './scale.json';
 
-export const ALGORITHM_VERSION = 'dxtag-five-axis-v1.5';
-export {chartRelativeRadar, normalizeLegacyRadar, projectLibraryRadar, CHART_RELATIVE_VERSION, CHART_RELATIVE_POLICY} from './algorithm/five-axis-complexity';
-export type {RadarProjection} from './algorithm/five-axis-complexity';
+export const ALGORITHM_VERSION = 'dxtag-five-axis-v1.1';
 export const SCALE_VERSION = scale.sourceProjection;
 export const AXES = ['键盘', '星星', '技巧', '体力', '爆发'] as const;
 export const DIFFICULTIES = {2:'BASIC',3:'ADVANCED',4:'EXPERT',5:'MASTER',6:'Re:MASTER'} as const;
 export type Difficulty = keyof typeof DIFFICULTIES;
 export type FiveAxisScores = RadarScores;
-export type ChartScores = {title: string; difficulty: string; scores: FiveAxisScores; chartRelativeScores: FiveAxisScores};
+export type ChartScores = {title: string; difficulty: string; scores: FiveAxisScores};
 export type ScoreResult = ChartScores[];
 export type ScoreError = {difficulty: string; message: string};
+const support = (raw: number, anchor: number) => Math.round(Math.max(0,Math.min(100,raw/anchor*100))*10)/10;
 
 /** Calculate one normal chart from source text. Metadata only selects a slot;
  * displayed level, title, version and external reference labels are never used. */
@@ -31,12 +30,11 @@ export function scoreChart(text: string, difficulty: Difficulty): ChartScores {
     throw new Error(`Slide 路径不完整（${star.coverage.observedBranches}/${star.coverage.expectedBranches}）；${missing.join('；') || '时值或几何无法完整解算'}。`);
   }
   const rhythm = keyboardRhythmComplexity(chart), input = inputComplexity(chart);
-  const result = projectLibraryRadar(normalizeLegacyRadar(base.features, scale.baseline), star.raw/scale.star*100,{
-    star_technique:star.techniqueRaw/scale.starTechnique*100,star_burst:star.burstRaw/scale.starBurst*100,
-    keyboard_rhythm:rhythm.raw/scale.rhythm*100,touch_input:input.touchRaw/scale.touch*100,hold_lock:input.raw/scale.holdLock*100});
+  const result = complexityRadar(legacyRadar(base.features, scale.baseline), support(star.raw,scale.star),{
+    star_technique:support(star.techniqueRaw,scale.starTechnique),star_burst:support(star.burstRaw,scale.starBurst),
+    keyboard_rhythm:support(rhythm.raw,scale.rhythm),touch_input:support(input.touchRaw,scale.touch),hold_lock:support(input.raw,scale.holdLock)});
   return {title:chart.title,difficulty:DIFFICULTIES[difficulty],
-    scores:Object.fromEntries(AXES.map(axis=>[axis,Math.round(result.fused[axis])/10])) as FiveAxisScores,
-    chartRelativeScores:result.chartRelativeScores};
+    scores:Object.fromEntries(AXES.map(axis=>[axis,Math.round(result[axis])/10])) as FiveAxisScores};
 }
 
 /** Score the selected slots. An error handler can collect failures and continue. */
