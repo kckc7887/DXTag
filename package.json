@@ -1,15 +1,32 @@
 {
   "name": "dxtag-five-axis",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Offline maidata to five-axis chart complexity scores",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kckc7887/DXTag.git"
+  },
+  "homepage": "https://github.com/kckc7887/DXTag#readme",
+  "bugs": { "url": "https://github.com/kckc7887/DXTag/issues" },
+  "keywords": ["maimai", "simai", "maidata", "difficulty", "dxtag"],
   "engines": { "node": ">=22" },
   "bin": { "dxtag-score": "dist/cli.mjs" },
-  "exports": "./dist/index.mjs",
+  "main": "./dist/index.mjs",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": ["dist/*.mjs", "dist/types/index.d.ts", "docs/ALGORITHM.md"],
   "scripts": {
-    "build": "tsc --noEmit && node scripts/build.mjs",
+    "build": "tsc --noEmit false --declaration --emitDeclarationOnly --outDir dist/types && node scripts/build.mjs",
+    "prepack": "npm run build",
     "score": "node dist/cli.mjs"
   },
   "devDependencies": {

@@ -6,18 +6,24 @@
 
 运行环境：Node.js 22 或更新版本。
 
+从 [GitHub Releases](https://github.com/kckc7887/DXTag/releases) 下载 `dxtag-five-axis-1.0.0.tgz`，在下载目录安装：
+
 ```powershell
-npm ci
-npm run build
-node dist/cli.mjs "maidata.txt"
+npm install -g ./dxtag-five-axis-1.0.0.tgz
+dxtag-score "maidata.txt"
 ```
 
 默认计算文件中的全部普通难度。使用 `-d` 选择一张谱面：
 
 ```powershell
-node dist/cli.mjs "maidata.txt" -d master
-node dist/cli.mjs "maidata.txt" -d 5 > scores.json
-npm run --silent score -- "maidata.txt" -d master
+dxtag-score "maidata.txt" -d master
+dxtag-score "maidata.txt" -d 5 > scores.json
+```
+
+也可以直接使用 npx：
+
+```powershell
+npx --package=./dxtag-five-axis-1.0.0.tgz dxtag-score "maidata.txt" -d master
 ```
 
 | Simai 槽位 | 难度参数 |
@@ -51,9 +57,17 @@ npm run --silent score -- "maidata.txt" -d master
 
 ## JavaScript 接口
 
+将下载的安装包放在项目目录，然后安装：
+
+```powershell
+npm install ./dxtag-five-axis-1.0.0.tgz
+```
+
+包提供 ESM 接口和 TypeScript 类型声明。
+
 ```javascript
 import {readFileSync} from 'node:fs';
-import {scoreChart, scoreMaidata} from './dist/index.mjs';
+import {scoreChart, scoreMaidata} from 'dxtag-five-axis';
 
 const text = readFileSync('./maidata.txt', 'utf8');
 const chart = scoreChart(text, 5);  // {title, difficulty, scores}
@@ -71,10 +85,25 @@ const charts = scoreMaidata(text, undefined, error => {
 ## 开发
 
 ```powershell
+npm ci
 npm run build
+node dist/cli.mjs "maidata.txt"
 ```
 
 算法与公式见 [技术文档](docs/ALGORITHM.md)。
+
+## 发布
+
+生成本地 npm 安装包：
+
+```powershell
+npm ci
+npm pack --pack-destination dist
+```
+
+打包会通过 `prepack` 自动生成 JavaScript 与类型声明，输出 `dist/dxtag-five-axis-1.0.0.tgz`。将该文件作为对应版本的 GitHub Release 附件发布即可，无需 npm 登录。包设置为 `private`，不发布到 npm registry，但支持从本地 `.tgz` 安装。
+
+发布内容仅包含编译产物、算法文档、README 和许可证，标尺数据已内嵌在 JavaScript 中。发布新版本前需同步更新 `package.json`、`package-lock.json` 和文档中的版本号。
 
 ## 许可
 

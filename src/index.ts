@@ -3,7 +3,7 @@ import {baseBurden} from './algorithm/base-burden';
 import {starComplexity} from './algorithm/star-complexity';
 import {keyboardRhythmComplexity} from './algorithm/rhythm-complexity';
 import {inputComplexity} from './algorithm/input-complexity';
-import {complexityRadar, legacyRadar, type RadarScores} from './algorithm/five-axis-complexity';
+import {complexityRadar, legacyRadar} from './algorithm/five-axis-complexity';
 import scale from './scale.json';
 
 export const ALGORITHM_VERSION = 'dxtag-five-axis-v1.1';
@@ -11,7 +11,7 @@ export const SCALE_VERSION = scale.sourceProjection;
 export const AXES = ['键盘', '星星', '技巧', '体力', '爆发'] as const;
 export const DIFFICULTIES = {2:'BASIC',3:'ADVANCED',4:'EXPERT',5:'MASTER',6:'Re:MASTER'} as const;
 export type Difficulty = keyof typeof DIFFICULTIES;
-export type FiveAxisScores = RadarScores;
+export type FiveAxisScores = Record<typeof AXES[number], number>;
 export type ChartScores = {title: string; difficulty: string; scores: FiveAxisScores};
 export type ScoreResult = ChartScores[];
 export type ScoreError = {difficulty: string; message: string};

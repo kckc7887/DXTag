@@ -4,8 +4,8 @@ import {DIFFICULTIES,scoreMaidata,type Difficulty} from './index';
 
 const HELP=`DXTag 五维评分 0.0–10.0
 
-用法：node dist/cli.mjs <maidata.txt> [--difficulty master] [--json]
-      npm run score -- <maidata.txt> [-d 5] [--json]
+用法：dxtag-score <maidata.txt> [--difficulty master] [--json]
+      node dist/cli.mjs <maidata.txt> [-d 5] [--json]
 
 默认计算文件中的全部普通谱（inote_2 至 inote_6）。
 -d, --difficulty  basic / advanced / expert / master / remaster，或 2–6
