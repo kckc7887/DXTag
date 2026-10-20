@@ -1,26 +1,16 @@
-/** Display projection for the independent complexity experiment. No constants,
- * difficulty names or tags are inputs. Button baseline and stamina stay intact;
- * Touch input and held-hand support supplement keyboard and technique. */
-export const COMPLEXITY_RADAR_VERSION = 'five-axis-complexity-v2';
 export const COMPLEXITY_RADAR_POLICY = Object.freeze({
-  version: COMPLEXITY_RADAR_VERSION,
   weights: { starTechnique: .65, keyboardRhythm: .65, starBurst: .65, holdLockTechnique: .65, touchKeyboard: .65, holdLockKeyboard: .35 },
-  combination: '100 * (1 - product(1 - normalized support)); old technique/burst are the baseline',
-  scale: 'independent all-library deduplicated p99.5 / positive p99 anchors',
-  activitySupportFloor: 20,
-  activity: 'observed complexity/rhythm support, distinct from archived rule labels',
 });
 export const RADAR_AXES = ['键盘', '星星', '技巧', '体力', '爆发'] as const;
 export type RadarScores = Record<typeof RADAR_AXES[number], number>;
 export type RadarSupports = { star_technique: number; keyboard_rhythm: number; star_burst: number; touch_input?: number; hold_lock?: number };
 const bounded = (v: number) => Math.max(0, Math.min(100, v));
 const rounded = (v: number) => Math.round(bounded(v) * 10) / 10;
-/** Match the existing Python radar's round() at exact ties. */
 export function roundHalfEven(value: number): number {
   const lower = Math.floor(value), fraction = value - lower;
   return fraction === .5 ? lower + (lower % 2) : Math.round(value);
 }
-export function legacyRadar(features: Record<string, number>, anchors: Record<string, number>): RadarScores {
+export function baselineRadar(features: Record<string, number>, anchors: Record<string, number>): RadarScores {
   const key = (name: string) => Number(features[name] ?? 0);
   const raw = {
     键盘: key('axis_keyboard_burst') + key('axis_keyboard_stamina') + key('axis_keyboard_technique'),
@@ -31,7 +21,7 @@ export function legacyRadar(features: Record<string, number>, anchors: Record<st
   };
   for (const axis of RADAR_AXES) {
     if (!(anchors[axis]! > 0) || !Number.isFinite(anchors[axis]) || !Number.isFinite(raw[axis]) || raw[axis] < 0)
-      throw Error(`Invalid legacy radar source: ${axis}`);
+      throw Error(`Invalid baseline radar source: ${axis}`);
   }
   return Object.fromEntries(RADAR_AXES.map(axis => [axis, roundHalfEven(bounded(raw[axis] / anchors[axis]! * 100))])) as RadarScores;
 }

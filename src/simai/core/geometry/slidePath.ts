@@ -54,7 +54,6 @@ function curvesFor(s: SlideSegment): Curve[] {
   }
 }
 
-/** Build from line/circle equations; the cache contains only locally computed geometry. */
 export function geometryFor(segment: SlideSegment): Geometry {
   const key=[segment.type,segment.startPos,segment.midPos??'',segment.endPos,segment.code].join(':');
   const found=cache.get(key);if(found)return found;

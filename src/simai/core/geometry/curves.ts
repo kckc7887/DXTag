@@ -25,7 +25,6 @@ export function arc(center: Point2D, radius: number, angle: number, sweep: numbe
     tangent:d => angle + Math.sign(sweep)*(d/radius + Math.PI/2)};
 }
 
-/** Tangent–circle–tangent path, parametrised by travelled distance. */
 export function orbit(a: Point2D, b: Point2D, center: Point2D, radius: number, direction: 1 | -1, minimumSweep = 0): Curve[] {
   const entryAngle = bearing(center,a) + direction * Math.acos(Math.min(1,radius/distance(center,a)));
   const exitAngle = bearing(center,b) - direction * Math.acos(Math.min(1,radius/distance(center,b)));

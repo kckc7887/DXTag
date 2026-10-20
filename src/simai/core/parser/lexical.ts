@@ -31,7 +31,6 @@ export function numberValue(text: string, source: SourceLocation, positive = fal
 }
 export type Lexeme = {kind: 'notes' | 'comma' | 'bpm' | 'division' | 'speed' | 'signature'; value: string; offsets: number[]};
 
-/** Whitespace and comments do not advance the notation clock. */
 export function* scan(body: string, map: SourceMap, origin: number): Generator<Lexeme> {
   let value = '', offsets: number[] = [];
   const drain = (): Lexeme => {

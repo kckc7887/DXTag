@@ -1,8 +1,7 @@
 {
-  "version": "five-axis-standalone-v1",
   "sourceProjection": "728aeadbe280c6b9",
   "scaleDate": "2026-10-01",
-  "population": "Valid ordinary charts, deduplicated by Simai fingerprint; no level, version, constant, fitting value or tag used.",
+  "population": "Valid ordinary charts, deduplicated by Simai fingerprint.",
   "chartCount": 7011,
   "normalization": "max(all p99.5, positive p99)",
   "baseline": {

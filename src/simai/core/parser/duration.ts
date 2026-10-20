@@ -1,7 +1,6 @@
 import type {DurationSpec, DurationValue, SourceLocation} from '../../types';
 import {numberValue, SimaiParseError} from './lexical';
 
-/** Decode the two independent clocks: preparation and movement. */
 export function parseDuration(raw: string, bpm: number, slide: boolean, source: SourceLocation):
   {durationMs: number; delayMs?: number; spec: DurationSpec} {
   let expression = raw.replace(/\s/g, '');

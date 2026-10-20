@@ -1,18 +1,8 @@
-/** Same-source Slide branch grouping, independently frozen and reviewed.
- * A shorter complete trajectory may be a prefix of a longer trajectory at the
- * same physical time/speed. This is a geometric stroke-sharing candidate, never
- * an official judgement guarantee or a required hand-count estimate.
- * Every arrow knot of both renderer polylines is checked: between union knots,
- * the position difference is linear and its norm cannot exceed the endpoints.
- * No fixed millisecond window or sampled-time step decides the relation.
- * Formal rules use it conservatively to avoid counting coincident prefixes as
- * several simultaneous actions. It never changes scored branches or timing. */
 import type {Chart, SlideNote, SourceLocation} from '../simai/types';
 import {prepareBranch, pathPose, type Geometry} from '../simai/core/geometry/slidePath';
 import {TimingTimeline} from '../simai/core/timing/TimingTimeline';
 import type {SlideEvent} from './types';
 
-export const SLIDE_ACTION_GROUPS_VERSION = 'research-slide-action-groups-v1';
 export const SLIDE_ACTION_GROUPS_POLICY = Object.freeze({
   rendererDiameter: 9.6, positionToleranceFraction: .0025,
   maximumSpeedRatio: 1.01, launchToleranceOfShorterDuration: 1e-8,
@@ -119,7 +109,7 @@ function compare(a:Prepared,b:Prepared,timeline:TimingTimeline,firstMs:number):A
   return result;
 }
 
-export function slideActionGroupsCandidate(chart:Chart,events:readonly SlideEvent[]):{version:string;policy:typeof SLIDE_ACTION_GROUPS_POLICY;features:Record<string,number>;groups:SlideActionGroupEvidence[]}{
+export function slideActionGroups(chart:Chart,events:readonly SlideEvent[]):{policy:typeof SLIDE_ACTION_GROUPS_POLICY;features:Record<string,number>;groups:SlideActionGroupEvidence[]}{
   const timeline=TimingTimeline.fromChart(chart),offset=timeline.msFromBeat(4)-chart.firstMs;
   const cached=new Map<string,SlideEvent>();
   for(const event of events){const key=`${event.slideId}:${event.branchIndex}`;if(cached.has(key))throw Error(`Duplicate cached branch ${key}`);cached.set(key,event);}
@@ -134,8 +124,6 @@ export function slideActionGroupsCandidate(chart:Chart,events:readonly SlideEven
       const pair=compare(branches[i]!,branches[j]!,timeline,chart.firstMs);pairs.push(pair);if(pair.shareable)compatiblePairs++;
       compatibility.set(`${Math.min(i,j)}:${Math.max(i,j)}`,pair.shareable);
     }
-    // Complete-link prevents two incompatible trajectories being joined through
-    // a tolerant intermediary. Longest first gives a full-path representative.
     const sets:Prepared[][]=[];
     for(const branch of [...branches].sort((a,b)=>(b.evidence.endMs-b.evidence.startMs)-(a.evidence.endMs-a.evidence.startMs)||a.evidence.code.localeCompare(b.evidence.code)||a.evidence.branchIndex-b.evidence.branchIndex)){
       const existing=sets.find(set=>set.every(member=>compatibility.get(`${Math.min(member.evidence.branchIndex,branch.evidence.branchIndex)}:${Math.max(member.evidence.branchIndex,branch.evidence.branchIndex)}`)));
@@ -159,15 +147,15 @@ export function slideActionGroupsCandidate(chart:Chart,events:readonly SlideEven
   const ticks=allActions.flatMap(a=>[{time:a.startMs,delta:1},{time:a.endMs,delta:-1}]).sort((a,b)=>a.time-b.time||a.delta-b.delta);
   let active=0,peak=0;for(const tick of ticks){active+=tick.delta;peak=Math.max(peak,active);}
   const ratio=[...allActions].map(a=>(a.endMs-a.startMs)/1000),counts=groups.map(g=>g.effectiveActionCount);
-  return {version:SLIDE_ACTION_GROUPS_VERSION,policy:SLIDE_ACTION_GROUPS_POLICY,groups,features:{
-    candidate_slide_action_raw_source_groups:groups.length,candidate_slide_action_multi_branch_source_groups:multipleSourceGroups,
-    candidate_slide_action_raw_branches:rawBranches,candidate_slide_action_effective_actions:effectiveActions,
-    candidate_slide_action_shared_branch_savings:rawBranches-effectiveActions,
-    candidate_slide_action_shared_branch_fraction:rawBranches?(rawBranches-effectiveActions)/rawBranches:0,
-    candidate_slide_action_compatible_pairs:compatiblePairs,candidate_slide_action_unresolved_branches:unresolved,
-    candidate_slide_action_raw_path_length:rawPathWork,candidate_slide_action_effective_path_length:effectivePathWork,
-    candidate_slide_action_raw_motion_ms:rawMotionMs,candidate_slide_action_effective_motion_ms:effectiveMotionMs,
-    candidate_slide_action_concurrency_peak:peak,candidate_slide_action_per_source_max:Math.max(0,...counts),
-    candidate_slide_action_duration_p50_s:quantile(ratio,.5),candidate_slide_action_duration_p90_s:quantile(ratio,.9),
+  return {policy:SLIDE_ACTION_GROUPS_POLICY,groups,features:{
+    slide_action_raw_source_groups:groups.length,slide_action_multi_branch_source_groups:multipleSourceGroups,
+    slide_action_raw_branches:rawBranches,slide_action_effective_actions:effectiveActions,
+    slide_action_shared_branch_savings:rawBranches-effectiveActions,
+    slide_action_shared_branch_fraction:rawBranches?(rawBranches-effectiveActions)/rawBranches:0,
+    slide_action_compatible_pairs:compatiblePairs,slide_action_unresolved_branches:unresolved,
+    slide_action_raw_path_length:rawPathWork,slide_action_effective_path_length:effectivePathWork,
+    slide_action_raw_motion_ms:rawMotionMs,slide_action_effective_motion_ms:effectiveMotionMs,
+    slide_action_concurrency_peak:peak,slide_action_per_source_max:Math.max(0,...counts),
+    slide_action_duration_p50_s:quantile(ratio,.5),slide_action_duration_p90_s:quantile(ratio,.9),
   }};
 }

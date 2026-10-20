@@ -1,13 +1,10 @@
 import type {Note} from '../simai/types';
 const q = (a: number[], p: number) => a.length ? [...a].sort((x, y) => x - y)[Math.floor((a.length - 1) * p)]! : 0;
-/** Infer a local notation-independent subdivision from actual onset spacing.
- * Pseudo-EACH offsets are annotations, not a new rhythmic subdivision. */
 export function inferRhythmUnit(notes: readonly Note[]): number {
   const times = [...new Set(notes.filter(n => !n.isMine).map(n => n.timingMs - (n.pseudoEachOffsetMs ?? 0)))].sort((a,b)=>a-b);
   const gaps = times.slice(1).map((time,i)=>time-times[i]!).filter(gap=>gap>1e-6);
   if (!gaps.length) return 1;
   const short = q(gaps, .15);
-  // Ratios reveal a hidden subdivision in 3:1 or 3:2 patterns without using displayed BPM.
   const candidates = gaps.filter(gap => gap <= short * 4);
   const divisions = [1, 2, 3, 4];
   let best = short;
@@ -21,9 +18,6 @@ export function inferRhythmUnit(notes: readonly Note[]): number {
 export const relativeRhythmNear = (value: number, target: number, tolerance = .025) =>
   Math.abs(value-target) <= Math.max(1e-6, Math.abs(target)*tolerance);
 
-/** Real fully idle gaps between occupied union components. A short nested
- * operation ending does not free the player while an earlier long one remains.
- * Leading/trailing silence and zero-length overlap gaps are not samples. */
 export function recoveryGaps(ranges: readonly {start:number;end:number}[]): number[] {
   const ordered=ranges.filter(range=>range.end>range.start).sort((a,b)=>a.start-b.start);
   const gaps:number[]=[];let occupiedUntil=Number.NEGATIVE_INFINITY;

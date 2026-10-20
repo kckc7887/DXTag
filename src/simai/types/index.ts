@@ -1,7 +1,6 @@
-/** The data contract between the Simai reader and the five-axis analyser. */
 export type ButtonPosition = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type TouchPosition = 'C' | 'C1' | 'C2' | `${'A' | 'B' | 'D' | 'E'}${ButtonPosition}`;
-export type ChartDifficulty = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type ChartDifficulty = number;
 export type Point2D = {x: number; y: number};
 export interface SourceLocation {offset: number; line: number; column: number; text: string}
 
@@ -32,7 +31,6 @@ export interface SlideBranch {
 export interface BaseNote {
   id: number;
   position: ButtonPosition | TouchPosition;
-  /** Internal beat/time coordinates include a four-beat lead-in. */
   timing: number; timingMs: number; endTimeMs: number; scoreBeat?: number;
   bpm: number; declaredDivisor?: number; divisionSpec?: DivisionSpec; pseudoEachOffsetMs?: number;
   group: number; source: SourceLocation; hiSpeed: number; usingSV: boolean;

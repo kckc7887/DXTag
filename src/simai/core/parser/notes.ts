@@ -58,7 +58,6 @@ class NoteReader {
       const before = this.flags();
       const duration = this.duration(true);
       const after = this.flags();
-      // A suffix next to a duration or at the branch end decorates the track.
       isBreak ||= (before + after).includes('b');
       isMine ||= (before + after).includes('m');
       segments.push({type, startPos: position, endPos: end!, ...(middle === undefined ? {} : {midPos: middle}),

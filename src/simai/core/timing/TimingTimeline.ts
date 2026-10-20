@@ -10,7 +10,6 @@ function floorIndex(values: readonly number[], value: number): number {
   return left - 1;
 }
 
-/** Piecewise affine conversion. Each breakpoint owns the interval to its right. */
 export class TimingTimeline {
   private readonly beats: number[] = [];
   private readonly milliseconds: number[] = [];

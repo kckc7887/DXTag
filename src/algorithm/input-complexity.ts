@@ -1,24 +1,12 @@
-/** Continuous input/held-hand observations. Touch is an attack, Touch HOLD an
- * occupied interval at its actual sensor, not an outer-button number. No
- * classifier, level, reference, title or feedback is an input.
- * Simai: https://w.atwiki.jp/simai/pages/1002.html#id_423ee98c */
 import type {Chart,Note} from '../simai/types';
 import {TimingTimeline} from '../simai/core/timing/TimingTimeline';
 import {inputOnsets,inputDistance,chordMovement,type KeyboardRhythmOnset} from './rhythm-complexity';
-export const INPUT_COMPLEXITY_VERSION='input-complexity-v1';
-export const INPUT_COMPLEXITY_POLICY=Object.freeze({version:INPUT_COMPLEXITY_VERSION,
-  lock:'log1p(held seconds)*log1p(foreign attack count)*log1p(actual onset rate)*duration/(duration+local IOI); movement and overlapping holds add planning load',
-  touch:'sqrt(Touch attacks)*(1+log1p(actual Touch onset rate))*(1+nominal movement/4)',
-  geometry:'button pairs retain ring steps; Touch pairs use sensor coordinates; separated-hold pressure is continuous, not an impossible-hand verdict',
-  shortHold:'duration/(duration+local IOI) attenuates short/pseudo HOLD occupancy; no fixed-ms rhythm gate or mandatory hold assertion',
-  aggregate:'sum lock windows / sqrt(window count); source intervals, no empty gap merged into a lock',
-  limitations:'Uncalibrated workload proxy; no optimal palm/contact assignment, physical judgement or reaction-time claim'});
 export type LockInput={noteId:number;kind:Note['type'];position:Note['position'];ms:number;beat:number;heldIds:number[];pressure:number;source:Note['source']};
 export type HoldLockWindow={id:string;holdId:number;holdKind:'hold-start'|'touch-hold-start';holdPosition:Note['position'];source:Note['source'];
   startMs:number;endMs:number;startBeat:number;endBeat:number;raw:number;noteIds:number[];touchCount:number;holdCount:number;
   onsetRate:number;movementMean:number;dualHeldTouchCount:number;components:{sustained:number;movement:number;coordination:number};inputs:LockInput[]};
-export type InputComplexityResult={version:typeof INPUT_COMPLEXITY_VERSION;research_only:true;raw:number;touchRaw:number;touchCount:number;touchTapCount:number;touchHoldCount:number;
-  windows:HoldLockWindow[];policy:typeof INPUT_COMPLEXITY_POLICY};
+export type InputComplexityResult={raw:number;touchRaw:number;touchCount:number;touchTapCount:number;touchHoldCount:number;
+  windows:HoldLockWindow[]};
 const EPS=1e-7,mean=(xs:number[])=>xs.reduce((a,b)=>a+b,0)/Math.max(1,xs.length);
 export function inputComplexity(chart:Chart):InputComplexityResult{
   const timeline=TimingTimeline.fromChart(chart),onsets=inputOnsets(chart,true,true),notes=new Map(chart.notes.map(n=>[n.id,n])),
@@ -43,7 +31,6 @@ export function inputComplexity(chart:Chart):InputComplexityResult{
       inputs.push({noteId,kind:n.type,position:n.position,ms:group.ms,beat:group.beat,
         heldIds:active.map(other=>other.note.id).sort((a,b)=>a-b),pressure,source:{...n.source}});
     }
-    // Only Touch-coupled HOLD load supplements the all-library button analysis.
     if(h.note.type!=='touch-hold-start'&&!inputs.some(i=>i.kind==='touch'||i.kind==='touch-hold-start'))continue;
     const sustained=Math.log1p(duration)*Math.log1p(noteIds.length)*Math.log1p(onsetRate)*occupancy,
       movement=sustained*movementMean/4,coordination=sustained*mean(inputs.map(i=>i.pressure));
@@ -62,6 +49,6 @@ export function inputComplexity(chart:Chart):InputComplexityResult{
     touchRaw=Math.sqrt(touchCount)*(1+Math.log1p(seconds>EPS?(touches.length-1)/seconds:0))*(1+movement/4),
     raw=windows.reduce((s,w)=>s+w.raw,0)/Math.sqrt(Math.max(1,windows.length));
   if(![raw,touchRaw,...windows.map(w=>w.raw)].every(Number.isFinite))throw Error('Non-finite input complexity');
-  return {version:INPUT_COMPLEXITY_VERSION,research_only:true,raw,touchRaw,touchCount,touchTapCount:[...notes.values()].filter(n=>!n.isMine&&n.type==='touch').length,
-    touchHoldCount:[...notes.values()].filter(n=>!n.isMine&&n.type==='touch-hold-start').length,windows,policy:INPUT_COMPLEXITY_POLICY};
+  return {raw,touchRaw,touchCount,touchTapCount:[...notes.values()].filter(n=>!n.isMine&&n.type==='touch').length,
+    touchHoldCount:[...notes.values()].filter(n=>!n.isMine&&n.type==='touch-hold-start').length,windows};
 }

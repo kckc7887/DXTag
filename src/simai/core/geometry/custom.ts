@@ -5,7 +5,6 @@ import {buttonPoint} from './sensors';
 type Waypoint = {center: Point2D; radius: number; direction: 1 | -1; revolutions?: number};
 type Bridge = {from: Point2D; to: Point2D; fromAngle: number; toAngle: number};
 
-/** Common tangents of signed circles; a point is a circle of radius zero. */
 function bridge(a: Waypoint, b: Waypoint): Bridge {
   const d = distance(a.center,b.center);
   if (a.radius === 0 && b.radius === 0)

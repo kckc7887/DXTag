@@ -17,14 +17,21 @@ function fields(text: string): Map<string, Field> {
 }
 export function getAvailableDifficulties(text: string): AvailableDifficulties {
   const meta = fields(text), result: AvailableDifficulties = {};
-  for (let i = 1; i <= 7; i++) if (meta.has(`inote_${i}`)) result[i] = true;
+  for (const [key, field] of meta) {
+    const match = /^inote_([1-9]\d*)$/.exec(key);
+    if (match && Number.isSafeInteger(Number(match[1])) && field.value.trim()) result[Number(match[1])] = true;
+  }
   return result;
 }
-export function parseSimaiChart(text: string, difficulty?: ChartDifficulty | number): Chart {
+export function validateDifficulty(difficulty: number): void {
+  if (!Number.isSafeInteger(difficulty) || difficulty < 1) throw new Error('槽位编号须为正安全整数。');
+}
+export function parseSimaiChart(text: string, difficulty: ChartDifficulty): Chart {
+  validateDifficulty(difficulty);
   const meta = fields(text), available = getAvailableDifficulties(text);
-  const slot = difficulty ?? Math.max(...Object.keys(available).map(Number));
+  const slot = difficulty;
   const body = meta.get(`inote_${slot}`);
-  if (!body) throw new Error(`inote_${slot} not found`);
+  if (!body?.value.trim()) throw new Error(`inote_${slot} 缺失或正文为空。`);
   const bpmText = meta.get('bpm')?.value.trim();
   const chart = parseSimaiBody(body.value, bpmText ? Number(bpmText) : undefined, text, body.offset);
   chart.difficulty = slot;
@@ -45,7 +52,6 @@ export function parseSimaiChart(text: string, difficulty?: ChartDifficulty | num
   return chart;
 }
 
-/** Streaming notation clock; commas advance time, whitespace never does. */
 export function parseSimaiBody(body: string, defaultBpm?: number, sourceText = body, sourceOffset = 0): Chart {
   const map = new SourceMap(sourceText);
   const chart: Chart = {title:'', artist:'', designer:'', level:{}, designers:{}, availableDifficulties:{},

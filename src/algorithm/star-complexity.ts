@@ -1,26 +1,12 @@
-/** Independent continuous Slide workload / structure proxy, not player anatomy
- * or a fitted difficulty model. Simai: https://w.atwiki.jp/simai/pages/1002.html
- * Geometry is computed from local line/circle primitives; no rule/axis/tag is consulted. */
 import type {Chart,Note,SlideNote} from '../simai/types';
 import {buttonPoint,touchPoint,prepareBranch,pathPose,type Geometry} from '../simai/core/geometry/slidePath';
 import {TimingTimeline} from '../simai/core/timing/TimingTimeline';
 import type {SlideEvent} from './types';
 import {rhythmComplexity} from './rhythm-complexity';
 
-export const STAR_COMPLEXITY_VERSION='star-complexity-v3';
-export const STAR_COMPLEXITY_POLICY=Object.freeze({version:STAR_COMPLEXITY_VERSION,coreBeats:16,stepBeats:4,contextBeats:2,
+export const STAR_COMPLEXITY_POLICY=Object.freeze({coreBeats:16,stepBeats:4,contextBeats:2,
   trajectorySamples:32,pairSamples:8,rendererDiameter:9.6,geometryDuplicateTolerance:1e-7,
   weights:{motion:1,rhythm:.7,coordination:1.2,context:1.5},techniqueWeights:{motion:.15,rhythm:.7,coordination:1.2,context:1.5},
-  waiting:'base=log1p(true contact count)*log1p(structural onset count / physical wait seconds); context += .5*base; rhythm += .5*base*beat irregularity',
-  tracking:'log1p(actual moving seconds)*sqrt(1+path length/diameter); sustained following, not inverse-speed or a stamina label',
-  headReturn:'3*origin affinity*path separation/diameter*(1+log1p(remaining seconds))*(1+log1p(overlapping HOLD seconds)); foreign contacts only during actual motion',
-  burst:'four-score-beat profile; rise=max(0,current raw-previous raw), including empty recovery blocks; peak rise is support, not a class label',
-  aggregation:'sum / sqrt(unique trajectories)',
-  fan:'centerline motion plus nominal three-terminal span; not three human hands or complete fan contacts',
-  coverage:'exact source/cache branch identity and physical segment timing/length; unresolved is null, never zero',
-  structure:'score beat ratios; pseudo-EACH removed only for structural coordinates, retained for physical movement',
-  context:'actual Slide tracking, origin reoccupation, waiting and before/after continuation; planning proxies, not mandatory hand assignments',
-  limitations:'Heuristic weights, sampled curvature and approximate path geometry; sqrt(N) length load, not intrinsic entropy; no judgement or optimal hand solver; not calibrated',
 });
 export type StarComponents={motion:number;rhythm:number;coordination:number;context:number};
 export type StarWaiting={noteCount:number;onsetCount:number;rate:number;irregularity:number;raw:number;noteIds:number[];durationMs:number;onsetBeats:number[]};
@@ -32,9 +18,8 @@ export type StarWindow={id:string;startMs:number;endMs:number;startBeat:number;e
   components:StarComponents;slideIds:number[];branchCount:number;contextNoteIds:number[];waiting:StarWaiting;
   occupancy:StarOccupancy&{events:StarHeadReturn[]}};
 export type StarProfile={startMs:number;endMs:number;startBeat:number;endBeat:number;raw:number;techniqueRaw:number;riseRaw:number;slideIds:number[];contextNoteIds:number[]};
-/** Full costs of one geometrically deduplicated timed trajectory, before sqrt(N). */
 export type StarActionWorkload={branchKeys:string[];slideIds:number[];hasHead:boolean;headMs:number;startMs:number;endMs:number;components:StarComponents};
-export type StarComplexityResult={schemaVersion:typeof STAR_COMPLEXITY_VERSION;raw:number|null;techniqueRaw:number|null;burstRaw:number|null;windows:StarWindow[];profile:StarProfile[];
+export type StarComplexityResult={raw:number|null;techniqueRaw:number|null;burstRaw:number|null;windows:StarWindow[];profile:StarProfile[];
   actions:StarActionWorkload[];components:StarComponents|null;occupancy:StarOccupancy|null;coverage:{expectedBranches:number;observedBranches:number;complete:boolean};policy:typeof STAR_COMPLEXITY_POLICY};
 type Point={x:number;y:number};
 type Piece={start:number;end:number;geometry:Geometry};
@@ -87,8 +72,6 @@ export function starComplexity(chart:Chart,events:readonly SlideEvent[]):StarCom
     const action:Action={keys:[key],ids:[note.id],head,headPosition:note.position,hasHead:!note.isHeadless,start,end,headBeat,startBeat,endBeat,pulseBeat,pieces,sample:[],length,fanSpan,parts:zero(),context:[],contextCouplings:new Map(),waiting:emptyWaiting(),waitingRhythm:0,headReturns:[]};
     for(let i=0;i<=policy.trajectorySamples;i++)action.sample.push(pose(action,start+(end-start)*i/policy.trajectorySamples));
     if(action.sample.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y))){complete=false;continue;}
-    // Cross-source duplicates are geometric coincidences, not two independent
-    // human paths. Complete timed trajectories only; prefixes remain separate.
     const bucketKey=[head,start,end].map(n=>Math.round(n*1e6)).join(':'),bucket=buckets.get(bucketKey)??[],
       duplicate=bucket.find(a=>equal(a.fanSpan,fanSpan)&&equal(a.length,length)&&a.sample.every((p,j)=>norm(sub(p,action.sample[j]!))<policy.geometryDuplicateTolerance));
     if(duplicate){duplicate.keys.push(key);duplicate.ids.push(note.id);duplicate.hasHead ||= !note.isHeadless;continue;}
@@ -103,8 +86,8 @@ export function starComplexity(chart:Chart,events:readonly SlideEvent[]):StarCom
   }
   if(cache.size!==expectedBranches||observedBranches!==expectedBranches)complete=false;
   const coverage={expectedBranches,observedBranches,complete};
-  if(!complete)return {schemaVersion:STAR_COMPLEXITY_VERSION,raw:null,techniqueRaw:null,burstRaw:null,windows:[],profile:[],actions:[],components:null,occupancy:null,coverage,policy};
-  if(!actions.length)return {schemaVersion:STAR_COMPLEXITY_VERSION,raw:0,techniqueRaw:0,burstRaw:0,windows:[],profile:[],actions:[],components:zero(),occupancy:emptyOccupancy(),coverage,policy};
+  if(!complete)return {raw:null,techniqueRaw:null,burstRaw:null,windows:[],profile:[],actions:[],components:null,occupancy:null,coverage,policy};
+  if(!actions.length)return {raw:0,techniqueRaw:0,burstRaw:0,windows:[],profile:[],actions:[],components:zero(),occupancy:emptyOccupancy(),coverage,policy};
   actions.sort((a,b)=>a.start-b.start||a.end-b.end);
   const launches=[...new Set(actions.map(a=>a.startBeat))].sort((a,b)=>a-b),
     launchGaps=launches.slice(1).map((v,i)=>v-launches[i]!);
@@ -114,7 +97,6 @@ export function starComplexity(chart:Chart,events:readonly SlideEvent[]):StarCom
     action.parts.rhythm+=Math.abs(Math.sin(Math.PI*phase))*.35+
       mean(near.slice(1).map((v,j)=>Math.abs(Math.log2(v/near[j]!))));
   }
-  // Interval sweep examines actual moving overlaps only; no minimum ms gate.
   let active:Action[]=[];
   for(const a of actions){active=active.filter(b=>b.end>a.start);
     for(const b of active){const from=Math.max(a.start,b.start),to=Math.min(a.end,b.end);if(to<=from)continue;
@@ -141,16 +123,12 @@ export function starComplexity(chart:Chart,events:readonly SlideEvent[]):StarCom
   const tracking=(a:Action,bounds?:[number,number])=>Math.log1p(moving(a,bounds)/1000)*Math.sqrt(1+a.length/diameter);
   const headReturn=(a:Action,c:Contact,bounds?:[number,number]):StarHeadReturn|null=>{
     if(!a.hasHead)return null;
-    // The original button's neighbourhood has a finite geometric support:
-    // half the adjacent-button chord. A nearby A Touch can share it; a far
-    // TAP cannot become an origin return merely because a Slide is moving.
     const origin=buttonPoint(a.headPosition),radius=norm(sub(origin,buttonPoint(a.headPosition%8+1)))/2,
       affinity=Math.max(0,1-Math.pow(norm(sub(origin,c.point))/radius,2)),
       held=c.note.type==='hold-start'||c.note.type==='touch-hold-start',
       pseudo=c.note.pseudoEachOffsetMs??0,
       from=held?Math.max(c.ms,a.start,bounds?timeline.audioMsFromScoreBeat(bounds[0],chart.firstMs)+pseudo:-Infinity):c.ms,
       to=held?Math.min(c.end,a.end,bounds?timeline.audioMsFromScoreBeat(bounds[1],chart.firstMs)+pseudo:Infinity):c.ms;
-    // EPS is only a floating-point identity tolerance, never a rhythm window.
     if(!affinity||from>=a.end-EPS||(held?to<=from+EPS:from<=a.start+EPS)
       ||(!held&&bounds&&(c.beat<bounds[0]||c.beat>bounds[1])))return null;
     const overlap=held?to-from:0,samples=held?policy.pairSamples:1,
@@ -258,6 +236,6 @@ export function starComplexity(chart:Chart,events:readonly SlideEvent[]):StarCom
   }
   const components=combine(actions.map(a=>({a,weight:1}))),raw=total(components),techniqueRaw=technique(components),burstRaw=Math.max(0,...profile.map(p=>p.riseRaw));
   const {events:_events,...summary}=occupancy(actions);
-  return {schemaVersion:STAR_COMPLEXITY_VERSION,raw,techniqueRaw,burstRaw,windows,profile,components,occupancy:summary,coverage,policy,
+  return {raw,techniqueRaw,burstRaw,windows,profile,components,occupancy:summary,coverage,policy,
     actions:actions.map(a=>({branchKeys:[...a.keys],slideIds:[...a.ids],hasHead:a.hasHead,headMs:a.head,startMs:a.start,endMs:a.end,components:{...a.parts}}))};
 }

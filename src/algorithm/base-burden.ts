@@ -1,16 +1,15 @@
-/** Numeric baseline retained from events-v7.3. Only the six burdens used by the current five-axis calculation remain. */
 import { buttonPoint, touchPoint, geometryFor, pathPose, prepareBranch, type Geometry } from '../simai/core/geometry/slidePath';
 import type { Chart, Note, SlideNote } from '../simai/types';
 import { TimingTimeline } from '../simai/core/timing/TimingTimeline';
 import { inferRhythmUnit, relativeRhythmNear } from './base-rhythm';
 import { slideLaunchHandover } from './analysis-slide-handover';
-import { repeatedLaunchTapCandidate } from './analysis-launch-tap-candidate';
-import { slideActionGroupsCandidate } from './analysis-slide-action-groups-candidate';
+import { repeatedLaunchTap } from './analysis-launch-tap';
+import { slideActionGroups } from './analysis-slide-action-groups';
 import { localMotionRhythm, motionRhythmKey } from './analysis-local-motion-rhythm';
 import { dottedBeatGapFlags } from './analysis-keyboard-rhythm';
 import { doubleSweepSlideContext } from './analysis-double-sweep-slide-context';
 import type { SlideEvent } from './types';
-const CONTACT_POLICY = { version: 'contact-v2', earlyContactMs: 180, minimumLeadMs: 12, sampleMs: 35 } as const;
+const CONTACT_POLICY = { earlyContactMs: 180, minimumLeadMs: 12, sampleMs: 35 } as const;
 const distance = (a: number, b: number) => Math.min(Math.abs(a - b), 8 - Math.abs(a - b));
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
 const percentile = (values: number[], q: number) => values.length ? values[Math.min(values.length - 1, Math.floor(q * (values.length - 1)))]! : 0;
@@ -133,10 +132,6 @@ export function baseBurden(chart: Chart): {
         else
             onsets.push({ time: note.timingMs, notes: [note] });
     }
-    // Local long/short ratios include dotted rhythms without claiming that a
-    // ratio proves a literal note spelling (a triplet ending can share one).
-    // Legacy dotted_* field names remain stable. Repeated spatial/chord work is
-    // what qualifies the sustained combination, not an isolated gap ratio.
     const dottedChordEvents: {
         time: number;
         dotted: boolean;
@@ -189,8 +184,6 @@ export function baseBurden(chart: Chart): {
     for (let i = 3; i < onsets.length; i++) {
         const group = onsets.slice(i - 3, i + 1);
         const gapsBeats = group.slice(1).map((onset, j) => scoreBeat(onset.time) - scoreBeat(group[j]!.time));
-        // Keep an unrelated long rest out of a four-onset rhythm relation. This
-        // uses this group's subdivision, never a smaller pulse elsewhere in song.
         if (!dottedBeatGapFlags(gapsBeats).some(Boolean) || gapsBeats.some(gap => gap <= 1e-6) || Math.max(...gapsBeats) > Math.min(...gapsBeats) * 4.1)
             continue;
         let shifts = 0;
@@ -218,7 +211,6 @@ export function baseBurden(chart: Chart): {
                 changes++;
         }
         const positionalSequence = inside.length >= 3 && changes >= 1 && constrained >= 1;
-        // The head TAP is a keyboard action even when its later movement also creates Slide burden.
         const accompaniment = inside;
         const runs: typeof accompaniment[] = [];
         for (const note of accompaniment) {
@@ -232,9 +224,6 @@ export function baseBurden(chart: Chart): {
         for (const run of runs) {
             if (run.length < 4)
                 continue;
-            // The occupied-hand phrase can use eighths even when unrelated earlier
-            // triplets determine the chart's smallest pulse. Its internal IOI pattern
-            // determines adjacency; the physical action-rate requirement stays real.
             const runPulse = inferRhythmUnit(run);
             let fast = 0, same = 0, adjacent = 0, moved = 0;
             for (let i = 1; i < run.length; i++) {
@@ -403,14 +392,9 @@ export function baseBurden(chart: Chart): {
             handoffs.push({ first: previous, next: motion, gapMs });
         }
     }
-    // Independent actions are connected by their waiting/movement phase, never by a
-    // minimum overlap in milliseconds. Physical speed contributes to strength below.
-    const actionGroups = slideActionGroupsCandidate(chart, slideEvents);
+    const actionGroups = slideActionGroups(chart, slideEvents);
     const representativeBranches = new Set(actionGroups.groups.flatMap(group => group.actions.map(action => action.representative)));
     const actionCountByHead = new Map(actionGroups.groups.map(group => [group.slideId, group.effectiveActionCount]));
-    // Keep all scored branches/events. Only independent motion candidates enter
-    // burst topology; a complete same-speed prefix is not another moving hand.
-    // Unsupported/fan routes remain conservative singletons.
     const burstMotions = motions.filter(m => representativeBranches.has(`${m.slide.id}:${m.branchIndex}`));
     let lastBurstEnd = Number.NEGATIVE_INFINITY;
     for (let i = 0; i < burstMotions.length; i++) {
@@ -439,9 +423,6 @@ export function baseBurden(chart: Chart): {
         const branching = (actionCountByHead.get(first.slide.id) ?? 0) >= 2 && (new Set(endpoints).size >= 3 || (sharedHead.length >= 2 &&
             endpoints.some((end, j) => endpoints.slice(j + 1).some(other => distance(end, other) >= 2)) &&
             2 / Math.max(.001, (Math.max(...sharedHead.map(m => m.end)) - first.start) / 1000) >= 6));
-        // Two branches from one star head can demand two hands, but a lone split
-        // with no next independent action is not itself a burst stream. Three
-        // genuinely distinct routes remain a separate reviewable topology.
         const acceptedBranching = branching;
         const fastPair = pairs.some(pair => 2 / Math.max(.001, (pair.end - pair.start) / 1000) >= 6 &&
             pair.first.slide.branches[pair.first.branchIndex]!.segments.at(-1)!.endPos === pair.second.slide.position &&
@@ -449,9 +430,6 @@ export function baseBurden(chart: Chart): {
         if (!(acceptedRapid || overlapping.length >= 2 || chainedPairs || acceptedBranching || fastPair))
             continue;
         const relevant = close.slice(0, 6), end = Math.max(...relevant.map(m => m.end));
-        // Keep physical work as evidence. An unvalidated universal speed cut-off
-        // dropped player-confirmed bursts while keeping a confirmed technique-only
-        // counterexample, so it must not replace configuration/hand-order analysis.
         lastBurstEnd = Math.min(end, first.start + pulse);
         const actionRate = independent.length / Math.max(.001, (end - first.start) / 1000);
         slideBurstBurden += (independent.length + overlapping.length + (acceptedBranching ? sharedHead.length : 0)) * Math.sqrt(actionRate);
@@ -502,7 +480,6 @@ export function baseBurden(chart: Chart): {
                 cursor = motion.end;
             }
         const span = runEnd - run[0]!.start, coverage = busy / Math.max(1e-6, span);
-        // Four tightly occupied operations or a repeated multi-group sequence.
         const physicalWork = run.reduce((sum, m) => sum + m.length, 0);
         if (coverage < .22 || span < 3500 || (busy < 2500 && physicalWork < 40) || (run.length < 8 && coverage < .58))
             return;
@@ -521,8 +498,6 @@ export function baseBurden(chart: Chart): {
         runEnd = Math.max(runEnd, motion.end);
     }
     finishRun();
-    // A repeated short group can have a real recovery gap and still form a long
-    // stamina passage. Connect by the group's own cycle, not the last tiny slide.
     let groupRun: typeof operationGroups = [];
     const flushGroupRun = () => {
         if (groupRun.length < 2 || groupRun.reduce((sum, g) => sum + g.length, 0) < 8)
@@ -672,8 +647,6 @@ export function baseBurden(chart: Chart): {
             slideTechniqueBurden += 1.5;
         }
     }
-    // Repeated return-to-head motions are a sustained hand-order problem even when
-    // each individual slide is slow. Only combine actual slide/TAP overlaps.
     let returnRun: typeof headReturnMotifs = [];
     const finishReturnRun = () => {
         if (returnRun.length < 3)
@@ -725,9 +698,6 @@ export function baseBurden(chart: Chart): {
             }
         }
     }
-    // Sequential launch relations are distinct from nearby-head or sensor
-    // conflicts. Keep the two explicit hand strategies as hypotheses, not a
-    // minimum-hand or optimal-solution claim. Shared one-stroke chains emit none.
     const launchHandover = slideLaunchHandover(slideEvents);
     for (const candidate of launchHandover.candidates) {
         if (!candidate.candidateAxis)
@@ -735,16 +705,13 @@ export function baseBurden(chart: Chart): {
         const resets = candidate.relations.reduce((sum, relation) => sum + relation.resetDistance, 0);
         slideTechniqueBurden += candidate.relations.length + resets / 8;
     }
-    const launchTap = repeatedLaunchTapCandidate(chart, slideEvents);
+    const launchTap = repeatedLaunchTap(chart, slideEvents);
     for (const candidate of launchTap.candidates) {
         for (let index = 0; index < candidate.relations.length; index++) {
             const relation = candidate.relations[index]!;
             slideTechniqueBurden += 1 + relation.tapMovement / 4;
         }
     }
-    // A shortest point-contact route does not measure the reading and action
-    // continuity of two synchronous sweeps transitioning into delayed Slides.
-    // Keep source-matched mixed evidence, bounded to the synchronous launch.
     const sweepSlideContext = doubleSweepSlideContext(chart);
     for (let i = 0; i < sweepSlideContext.relations.length; i++)
         slideTechniqueBurden += 1;

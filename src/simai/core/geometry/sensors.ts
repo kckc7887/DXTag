@@ -11,7 +11,6 @@ export function touchPoint(position: string): Point2D {
   return polar(radius,Math.PI*((group === 'D' || group === 'E' ? 6 : 5)-2*index)/8);
 }
 
-/** Sensor contacts are spatial intervals along the polyline, in sample coordinates. */
 export function sensorIntervals(samples: readonly Point2D[], end: number): number[][] {
   const sensors = [
     ...Array.from({length:8},(_,i) => ({id:i,point:polar(4.4,Math.PI*(5/8-(i+1)/4)),radius:1.15})),
@@ -30,7 +29,6 @@ export function sensorIntervals(samples: readonly Point2D[], end: number): numbe
       }
     }
   }
-  // The end gate represents arrival; preparatory contacts belong to preceding gates.
   const last = intervals.filter(g => g[2] === end-1).at(-1);
   if (last) {last[0]=samples.length; last[1]=samples.length;}
   else intervals.push([samples.length,samples.length,end-1,-1]);

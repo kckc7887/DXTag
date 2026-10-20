@@ -1,10 +1,5 @@
-/** Candidate relation model; deliberately not imported by v6.1 ingest.
- * Topology uses score-beat phase. Physical motion gaps and candidate hand travel
- * use audio milliseconds. The two explicit playing strategies are comparisons,
- * not an optimum hand assignment or an official judgement simulation. */
 import type { SlideEvent } from './types';
 
-export const SLIDE_HANDOVER_SCHEMA='slide-handover-candidate-v1';
 const ringDistance=(a:number,b:number)=>Math.min(Math.abs(a-b),8-Math.abs(a-b));
 const endPosition=(e:SlideEvent)=>Number(e.segments.at(-1)!.code.at(-1));
 const phaseNear=(actual:number,expected:number)=>Math.abs(actual-expected)<=.025;
@@ -19,13 +14,12 @@ type Travel={fromSlideId:number;toSlideId:number;distance:number;availableMs:num
 export type HandoverStrategy={
   name:'fixed-slide-hand'|'alternating-slide-hands';travels:Travel[];
   headTravelDistance:number;resetTravelDistance:number;travelCost:number;unavailableTransitions:number;
-  limitation:string;
 };
 export type LaunchHandoverCandidate={
   kind:'launch-reset-chain'|'launch-overlap-chain'|'shared-stroke-chain';candidateAxis:'星星·技巧'|null;
   startMs:number;endMs:number;startBeat:number;endBeat:number;
   slideIds:number[];relations:LaunchHandoverRelation[];strategies:HandoverStrategy[];
-  evidenceKind:'interval';status:'requires_player_review';reason:string;
+  evidenceKind:'interval';reason:string;
 };
 function strategy(paths:SlideEvent[],alternate:boolean):HandoverStrategy {
   const travels:Travel[]=[];let headTravelDistance=0,headCost=0;
@@ -50,12 +44,11 @@ function strategy(paths:SlideEvent[],alternate:boolean):HandoverStrategy {
     else if(travel.distance>0)travelCost+=travel.distance*travel.distance/(travel.availableMs/1000);
   }
   return {name:alternate?'alternating-slide-hands':'fixed-slide-hand',travels,headTravelDistance,
-    resetTravelDistance:travels.reduce((sum,t)=>sum+t.distance,0),travelCost,unavailableTransitions,
-    limitation:'Only this Slide/head chain is scheduled. Other TAP, HOLD, Touch, contact width and judgement tolerances are not solved.'};
+    resetTravelDistance:travels.reduce((sum,t)=>sum+t.distance,0),travelCost,unavailableTransitions};
 }
 
 export function slideLaunchHandover(events:readonly SlideEvent[]):{
-  schemaVersion:string;relations:LaunchHandoverRelation[];candidates:LaunchHandoverCandidate[];
+  relations:LaunchHandoverRelation[];candidates:LaunchHandoverCandidate[];
   features:Record<string,number>;excludedMultiBranchHeads:number;
 } {
   const byId=new Map<number,SlideEvent[]>();
@@ -67,8 +60,6 @@ export function slideLaunchHandover(events:readonly SlideEvent[]):{
     const prior=paths[i]!,span=prior.startBeat-prior.headBeat;
     if(span<=1e-9)continue;
     if(allHeadTimes.filter(beat=>Math.abs(beat-prior.headBeat)<=span*.025).length!==1)continue;
-    // One-to-one sequential chains only. Chords/multi-branch heads are explicit
-    // unresolved cases, not silently flattened into this two-strategy comparison.
     const next=paths.filter(p=>p.slideId!==prior.slideId&&p.headBeat>prior.headBeat+1e-9&&phaseNear((p.headBeat-prior.headBeat)/span,1));
     if(next.length!==1||allHeadTimes.filter(beat=>phaseNear((beat-prior.headBeat)/span,1)).length!==1)continue;
     const n=next[0]!;
@@ -91,11 +82,11 @@ export function slideLaunchHandover(events:readonly SlideEvent[]):{
     const needsReset=edges.some(r=>r.resetDistance>0),overlap=edges.some(r=>r.resetGapMs < -1e-6);
     candidates.push({kind:needsReset?'launch-reset-chain':overlap?'launch-overlap-chain':'shared-stroke-chain',candidateAxis:needsReset||overlap?'星星·技巧':null,
       startMs:chain[0]!.startMs,endMs:Math.max(...chain.map(p=>p.endMs)),startBeat:chain[0]!.startBeat,endBeat:Math.max(...chain.map(p=>p.endBeat)),
-      slideIds:ids,relations:edges,strategies:[strategy(chain,false),strategy(chain,true)],evidenceKind:'interval',status:'requires_player_review',
-      reason:needsReset?'连续下一星头落在上一滑动启动拍；滑动终点与后续起点不同，比较固定划手与交替划手的复位。':overlap?'连续下一星头落在上一启动拍，前次划动尚未结束时下一次已启动，需要另行复核双手分配。':'连续下一星头落在上一启动拍且路径首尾衔接；不因连续星头单独判技巧。'});
+      slideIds:ids,relations:edges,strategies:[strategy(chain,false),strategy(chain,true)],evidenceKind:'interval',
+      reason:needsReset?'下一星头与上一启动拍重合，上一滑尾与下一起点位置不同。':overlap?'下一星头与上一启动拍重合，相邻路径的移动区间交叠。':'下一星头与上一启动拍重合，相邻路径首尾相接。'});
   }
   const positive=relations.filter(r=>r.resetGapMs>1e-6);
-  return {schemaVersion:SLIDE_HANDOVER_SCHEMA,relations,candidates,
+  return {relations,candidates,
     excludedMultiBranchHeads:[...byId.values()].filter(g=>g.length>1).length,
     features:{event_launch_handover_pairs:relations.length,event_launch_handover_head_distance_sum:relations.reduce((s,r)=>s+r.headDistance,0),
       event_launch_handover_reset_distance_sum:relations.reduce((s,r)=>s+r.resetDistance,0),

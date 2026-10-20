@@ -1,152 +1,129 @@
 # DXTag
 
-读取 `maidata.txt`，输出曲名、难度和基于全曲库固定标尺的五维分数。评分包含键盘、星星、技巧、体力、爆发，范围为 **0.0–10.0**，保留一位小数。
+读取 `maidata.txt`，计算键盘、星星、技巧、体力、爆发五维分数。各项使用全曲库固定标尺，范围为 **0.0–10.0**，保留一位小数。
 
-当前安装包版本为 **1.0.0**，通过 [GitHub Release v1.0.0](https://github.com/kckc7887/DXTag/releases/tag/v1.0.0) 分发，不发布到 npm registry。包版本与算法版本分别管理；本版使用的算法标识为 `dxtag-five-axis-v1.1`。
+版本：**1.0.0** · 运行环境：**Node.js 22 或更新版本**
 
-## 安装与运行
+## 安装
 
-运行环境：Node.js 22 或更新版本。
-
-下载 [dxtag-five-axis-1.0.0.tgz](https://github.com/kckc7887/DXTag/releases/download/v1.0.0/dxtag-five-axis-1.0.0.tgz)，无需解压，在下载目录安装：
+从源码安装命令行工具：
 
 ```powershell
-npm install -g ./dxtag-five-axis-1.0.0.tgz
+git clone https://github.com/kckc7887/DXTag.git
+cd DXTag
+npm ci
+npm run build
+npm install -g .
+```
+
+## 命令行
+
+```powershell
 dxtag-score "maidata.txt"
-```
-
-默认计算文件中的全部普通难度。使用 `-d` 选择一张谱面：
-
-```powershell
+dxtag-score "maidata.txt" --all
+dxtag-score "maidata.txt" -d 5
 dxtag-score "maidata.txt" -d master
-dxtag-score "maidata.txt" -d 5 > scores.json
+dxtag-score "maidata.txt" -d 3,5,8
+dxtag-score "maidata.txt" -d expert -d 5,8 > scores.json
 ```
 
-也可以直接使用 npx：
-
-```powershell
-npx --package=./dxtag-five-axis-1.0.0.tgz dxtag-score "maidata.txt" -d master
-```
-
-| Simai 槽位 | 难度参数 |
+| 参数 | 含义 |
 | --- | --- |
-| `inote_2` | `basic` 或 `2` |
-| `inote_3` | `advanced` 或 `3` |
-| `inote_4` | `expert` 或 `4` |
-| `inote_5` | `master` 或 `5` |
-| `inote_6` | `remaster`、`re:master` 或 `6` |
+| `<maidata.txt>` | 一个 maidata 文件的路径 |
+| `-d`、`--difficulty` | 单个槽位或逗号分隔的槽位列表，支持重复传入 |
+| `--all` | 文件中全部正文非空的槽位，与 `-d` 互斥 |
+| `--json` | JSON 输出，与默认输出一致 |
+| `-h`、`--help` | 帮助 |
 
-参数不区分大小写。`--json` 与默认输出相同，`--help` 显示帮助。
+省略选择参数时计算全部槽位。选择结果按编号去重、升序排列。
 
-输入编码支持 UTF-8（含 BOM）及带 BOM 的 UTF-16 LE／BE。
+槽位字段采用 `&inote_N=`，`N` 为十进制正安全整数，范围为 `1`–`9007199254740991`，首位为 `1`–`9`。以下槽位同时提供名称别名，名称匹配忽略大小写。
 
-## 输出
+| 槽位 | 名称参数 | 结果名称 |
+| --- | --- | --- |
+| 1 | `easy` | `EASY` |
+| 2 | `basic` | `BASIC` |
+| 3 | `advanced` | `ADVANCED` |
+| 4 | `expert` | `EXPERT` |
+| 5 | `master` | `MASTER` |
+| 6 | `remaster`、`re:master` | `Re:MASTER` |
+| 7 | `utage` | `UTAGE` |
+| 其他正安全整数 | 数字编号 | `inote_N` |
 
-输出始终是 JSON 数组，每张谱面包含三个字段：
+文件编码支持 UTF-8、带 BOM 的 UTF-8，以及带 BOM 的 UTF-16 LE／BE。
 
-- `title`：maidata 的 `&title`；缺省时为空字符串。
-- `difficulty`：`BASIC`、`ADVANCED`、`EXPERT`、`MASTER` 或 `Re:MASTER`。
-- `scores`：以全曲库固定标尺计算的五项数值，可跨谱面比较。
-算法版本为 `dxtag-five-axis-v1.1`。
+## 结果与错误
 
-计算失败的谱面从结果中略过，原因写入标准错误。全部失败时输出 `[]`。
+CLI 向标准输出写入 JSON 数组，五维数值固定显示一位小数。每项包含以下字段：
+
+| 字段 | 类型 | 内容 |
+| --- | --- | --- |
+| `title` | `string` | maidata 的 `&title`，缺省为空字符串 |
+| `slot` | `number` | `inote_N` 的槽位编号 |
+| `difficulty` | `string` | 槽位对应的结果名称 |
+| `scores` | `FiveAxisScores` | 键盘、星星、技巧、体力、爆发五项分数 |
+
+逐谱解析或计算失败时，CLI 将槽位和错误写入标准错误，并继续处理其余选择项。结果数组包含成功项；全部计算失败时输出 `[]`。
 
 | 退出码 | 含义 |
 | --- | --- |
-| `0` | 全部成功 |
-| `1` | 部分或全部谱面计算失败 |
-| `2` | 参数、文件读取／编码或普通谱槽位选择错误 |
+| 0 | 全部成功 |
+| 1 | 部分或全部谱面解析、计算失败 |
+| 2 | 参数、文件读取、编码或槽位选择错误 |
 
-## JavaScript 接口
+槽位选择错误包括非法编号、空选择、缺失槽位和指定槽位正文为空。选择检查在逐谱计算前完成。
 
-将下载的安装包放在项目目录，然后安装：
+## JavaScript API
+
+完成上述源码构建后，在应用项目目录安装本地 DXTag 仓库。以下命令适用于应用项目与 DXTag 目录同级的布局：
 
 ```powershell
-npm install ./dxtag-five-axis-1.0.0.tgz
+npm install ../DXTag
 ```
 
-包提供 ESM 接口和 TypeScript 类型声明。
-
-以下 JavaScript 示例可保存为 `.mjs`，或在设置了 `"type": "module"` 的项目中使用。接口接收已解码的 maidata 文本，文件读取由调用方负责。
+包提供 ESM 接口及 TypeScript 类型声明。API 接收已解码的完整 maidata 文本，所有函数同步返回。
 
 ```javascript
 import {readFileSync} from 'node:fs';
-import {scoreChart, scoreMaidata} from 'dxtag-five-axis';
+import {listDifficulties, scoreChart, scoreMaidata} from 'dxtag-five-axis';
 
 const text = readFileSync('./maidata.txt', 'utf8');
-const chart = scoreChart(text, 5);  // {title, difficulty, scores}
-const charts = scoreMaidata(text); // 同一结构的数组
+const slots = listDifficulties(text);
+const chart = scoreChart(text, 5);
+const selected = scoreMaidata(text, [3, 5, 8]);
+const all = scoreMaidata(text, 'all');
 ```
 
-两个接口在计算失败时抛出异常。`scoreMaidata` 可传入错误回调以继续计算其他谱面：
+| 函数 | 返回值 |
+| --- | --- |
+| `listDifficulties(text)` | 正文非空的槽位编号数组，按编号升序排列 |
+| `scoreChart(text, difficulty)` | 指定槽位的 `ChartScores` |
+| `scoreMaidata(text, selection?, onError?)` | 选择槽位的 `ScoreResult` |
+
+`selection` 接受一个数字编号、只读编号数组或 `'all'`；省略时计算全部。`scoreChart` 的错误直接抛出。`scoreMaidata` 的选择错误直接抛出，逐谱错误由 `onError` 接收；省略回调时遇到首个计算错误即抛出。
 
 ```javascript
-const charts = scoreMaidata(text, undefined, error => {
-  console.error(error.difficulty, error.message);
+const results = scoreMaidata(text, 'all', error => {
+  console.error(error.slot, error.difficulty, error.message);
 });
 ```
 
-`difficulty` 使用数字槽位 `2 | 3 | 4 | 5 | 6`，字符串难度名仅用于 CLI。两个接口均同步返回结果。
-
-TypeScript 可直接导入公开类型：
-
-```typescript
-import {
-  scoreChart,
-  type ChartScores,
-  type Difficulty,
-} from 'dxtag-five-axis';
-
-const difficulty: Difficulty = 5;
-const calculate = (text: string): ChartScores => scoreChart(text, difficulty);
-```
-
-| 导出 | 含义 |
+| 导出 | 定义 |
 | --- | --- |
 | `AXES` | 五轴名称与顺序 |
-| `DIFFICULTIES` | 普通谱槽位到显示难度名的映射 |
-| `ALGORITHM_VERSION` | 算法版本标识 |
-| `SCALE_VERSION` | 固定标尺版本标识 |
-| `Difficulty` | 普通谱槽位类型 |
-| `FiveAxisScores` | 五轴数值类型 |
-| `ChartScores`、`ScoreResult` | 单谱结果与结果数组类型 |
-| `ScoreError` | 错误回调参数类型 |
+| `DIFFICULTIES` | 1–7 槽位的显示名称 |
+| `ALGORITHM_VERSION`、`SCALE_VERSION` | 项目统一版本，来源为 `package.json` 的 `version` |
+| `Difficulty` | 数字槽位类型，运行时要求正安全整数 |
+| `DifficultySelection` | 单个 `Difficulty`、只读编号数组或 `'all'` |
+| `FiveAxisScores` | 以五轴名称为键、分数为值的对象 |
+| `ChartScores` | `{title, slot, difficulty, scores}` |
+| `ScoreResult` | `ChartScores[]` |
+| `ScoreError` | `{slot, difficulty, message}` |
 
-## 开发
+## 算法
 
-```powershell
-npm ci
-npm run build
-node dist/cli.mjs "maidata.txt"
-```
+数据结构、时间坐标、公式和参数见 [算法文档](docs/ALGORITHM.md)。
 
-算法与公式见 [技术文档](docs/ALGORITHM.md)。
+## 许可证
 
-## 发布
-
-生成本地 npm 安装包：
-
-```powershell
-npm ci
-npm pack --pack-destination dist
-```
-
-打包会通过 `prepack` 自动生成 JavaScript 与类型声明，输出 `dist/dxtag-five-axis-1.0.0.tgz`。将该文件作为对应版本的 GitHub Release 附件发布即可，无需 npm 登录。包设置为 `private`，不发布到 npm registry，但支持从本地 `.tgz` 安装。
-
-安装包包含以下文件，标尺数据已内嵌在 JavaScript 中，使用时无需另行下载：
-
-| 文件 | 用途 |
-| --- | --- |
-| `dist/cli.mjs` | `dxtag-score` 命令入口 |
-| `dist/index.mjs` | ESM 公共接口 |
-| `dist/types/index.d.ts` | 公共接口类型声明 |
-| `package.json` | 包信息与入口配置 |
-| `README.md`、`docs/ALGORITHM.md`、`LICENSE` | 使用说明、算法文档与许可证 |
-
-发布新版本前需同步更新 `package.json`、`package-lock.json` 和文档中的版本号。提交并推送该版本源码后，以对应提交创建 `v<版本号>` 标签和 GitHub Release，并上传生成的 `.tgz`。用户应下载安装包附件；GitHub 自动提供的源码压缩包不包含预编译产物。
-
-## 许可
-
-项目使用 [MIT License](LICENSE)。
-
-Copyright (c) 2026 尘言
+[MIT License](LICENSE) · Copyright (c) 2026 尘言
