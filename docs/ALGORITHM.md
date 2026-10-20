@@ -2,6 +2,8 @@
 
 ## 1. 数据与接口
 
+本实现通过 `dxtag-five-axis` 包提供 ESM 接口与 TypeScript 类型声明。安装包版本为 `1.0.0`，算法版本标识为 `dxtag-five-axis-v1.1`；安装方式与下载入口见 [使用说明](../README.md)。
+
 每张谱面的结果包含 `title`、`difficulty`、`scores`。`title` 取自 maidata 的 `&title`，`difficulty` 由选中的普通谱槽位确定。
 
 `scores` 使用全曲库固定标尺，可跨谱面比较，五项数值均为 0.0–10.0：
@@ -15,6 +17,8 @@
 | 爆发 | 短时输入负担及局部星星复杂度突增 |
 
 `scoreChart(text, difficulty)` 返回一个结果对象。`scoreMaidata(text, difficulty?, onError?)` 返回结果数组；省略难度时计算 `inote_2` 至 `inote_6` 中存在的谱面。计算错误默认抛出异常；提供 `onError` 时，回调接收 `{difficulty, message}`，随后继续处理其他谱面。
+
+接口均为同步函数，`text` 是已解码的完整 maidata 文本，`difficulty` 是数字槽位 `2 | 3 | 4 | 5 | 6`。无普通谱槽位、非法难度参数等选择错误直接抛出，不进入逐谱错误回调。公开结果类型为 `ChartScores`、`ScoreResult`、`FiveAxisScores`，选择与错误类型为 `Difficulty`、`ScoreError`。
 
 CLI 将结果数组写入标准输出，错误写入标准错误。JSON 数值固定显示一位小数。
 
@@ -312,12 +316,21 @@ scores[axis] = Math.round(internalScore[axis]) / 10
 
 此全曲库路径的固定锚点、融合、封顶和舍入保持不变。
 
-## 9. 构建
+## 9. 构建与打包
 
 ```powershell
+npm ci
 npm run build
 ```
 
-构建先执行 TypeScript 类型检查，再由 esbuild 生成 `dist/cli.mjs` 和 `dist/index.mjs`。
+构建先由 TypeScript 生成 `dist/types/` 下的声明文件，再由 esbuild 将 CLI 和公共接口分别打包为 `dist/cli.mjs`、`dist/index.mjs`。公开类型入口为 `dist/types/index.d.ts`，运行时标尺数据随 JavaScript 内嵌。
+
+生成可安装的 npm 压缩包：
+
+```powershell
+npm pack --pack-destination dist
+```
+
+`prepack` 会自动执行构建，无需在打包前另行运行 `npm run build`。版本 `1.0.0` 的产物为 `dist/dxtag-five-axis-1.0.0.tgz`，包含两个 JavaScript 入口、公共类型声明、包信息、使用与算法文档及许可证。该文件通过 GitHub Release 附件分发，包保持 `private: true`，不发布到 npm registry。
 
 项目许可见 [MIT License](../LICENSE)。
