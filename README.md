@@ -61,7 +61,7 @@ CLI 向标准输出写入 JSON 数组，五维数值固定显示一位小数。�
 | `title` | `string` | maidata 的 `&title`，缺省为空字符串 |
 | `slot` | `number` | `inote_N` 的槽位编号 |
 | `difficulty` | `string` | 槽位对应的结果名称 |
-| `scores` | `FiveAxisScores` | 键盘、星星、技巧、体力、爆发五项分数 |
+| `scores` | `AxisScores` | 键盘、星星、技巧、体力、爆发五项分数 |
 
 逐谱解析或计算失败时，CLI 将槽位和错误写入标准错误，并继续处理其余选择项。结果数组包含成功项；全部计算失败时输出 `[]`。
 
@@ -85,7 +85,7 @@ npm install ../DXTag
 
 ```javascript
 import {readFileSync} from 'node:fs';
-import {listDifficulties, scoreChart, scoreMaidata} from 'dxtag-five-axis';
+import {listDifficulties, scoreChart, scoreMaidata} from 'dxtag';
 
 const text = readFileSync('./maidata.txt', 'utf8');
 const slots = listDifficulties(text);
@@ -115,7 +115,7 @@ const results = scoreMaidata(text, 'all', error => {
 | `ALGORITHM_VERSION`、`SCALE_VERSION` | 项目统一版本，来源为 `package.json` 的 `version` |
 | `Difficulty` | 数字槽位类型，运行时要求正安全整数 |
 | `DifficultySelection` | 单个 `Difficulty`、只读编号数组或 `'all'` |
-| `FiveAxisScores` | 以五轴名称为键、分数为值的对象 |
+| `AxisScores` | 以五轴名称为键、分数为值的对象 |
 | `ChartScores` | `{title, slot, difficulty, scores}` |
 | `ScoreResult` | `ChartScores[]` |
 | `ScoreError` | `{slot, difficulty, message}` |

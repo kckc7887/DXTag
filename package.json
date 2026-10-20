@@ -1,8 +1,8 @@
 {
-  "name": "dxtag-five-axis",
+  "name": "dxtag",
   "version": "1.0.0",
   "private": true,
-  "description": "Offline maidata to five-axis chart complexity scores",
+  "description": "Simai chart scoring",
   "license": "MIT",
   "type": "module",
   "repository": {
