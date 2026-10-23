@@ -3,6 +3,7 @@
   "scaleDate": "2026-10-01",
   "population": "Valid ordinary charts, deduplicated by Simai fingerprint.",
   "chartCount": 7011,
+  "exponent": 1.5,
   "normalization": "max(all p99.5, positive p99)",
   "baseline": {
     "键盘": 100.07579192161403,

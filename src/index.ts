@@ -3,7 +3,7 @@ import {baseBurden} from './algorithm/base-burden';
 import {starComplexity} from './algorithm/star-complexity';
 import {keyboardRhythmComplexity} from './algorithm/rhythm-complexity';
 import {inputComplexity} from './algorithm/input-complexity';
-import {complexityRadar, baselineRadar} from './algorithm/score-projection';
+import {complexityRadar, baselineRadar, normalizeBurden} from './algorithm/score-projection';
 import scale from './scale.json';
 
 declare const __DXTAG_VERSION__: string;
@@ -17,7 +17,6 @@ export type AxisScores = Record<typeof AXES[number], number>;
 export type ChartScores = {title: string; slot: Difficulty; difficulty: string; scores: AxisScores};
 export type ScoreResult = ChartScores[];
 export type ScoreError = {slot: Difficulty; difficulty: string; message: string};
-const support = (raw: number, anchor: number) => Math.round(Math.max(0,Math.min(100,raw/anchor*100))*10)/10;
 const difficultyName = (slot: Difficulty): string =>
   DIFFICULTIES[slot as keyof typeof DIFFICULTIES] ?? `inote_${slot}`;
 
@@ -35,9 +34,9 @@ export function scoreChart(text: string, difficulty: Difficulty): ChartScores {
     throw new Error(`Slide 路径不完整（${star.coverage.observedBranches}/${star.coverage.expectedBranches}）；${missing.join('；') || '时值或几何无法完整解算'}。`);
   }
   const rhythm = keyboardRhythmComplexity(chart), input = inputComplexity(chart);
-  const result = complexityRadar(baselineRadar(base.features, scale.baseline), support(star.raw,scale.star),{
-    star_technique:support(star.techniqueRaw,scale.starTechnique),star_burst:support(star.burstRaw,scale.starBurst),
-    keyboard_rhythm:support(rhythm.raw,scale.rhythm),touch_input:support(input.touchRaw,scale.touch),hold_lock:support(input.raw,scale.holdLock)});
+  const result = complexityRadar(baselineRadar(base.features, scale.baseline), normalizeBurden(star.raw,scale.star),{
+    star_technique:normalizeBurden(star.techniqueRaw,scale.starTechnique),star_burst:normalizeBurden(star.burstRaw,scale.starBurst),
+    keyboard_rhythm:normalizeBurden(rhythm.raw,scale.rhythm),touch_input:normalizeBurden(input.touchRaw,scale.touch),hold_lock:normalizeBurden(input.raw,scale.holdLock)});
   return {title:chart.title,slot:difficulty,difficulty:difficultyName(difficulty),
     scores:Object.fromEntries(AXES.map(axis=>[axis,Math.round(result[axis])/10])) as AxisScores};
 }
